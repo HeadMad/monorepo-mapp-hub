@@ -50,8 +50,11 @@ jobs:
         working-directory: apps/shell-mobile
         run: npm install
 
-      - name: Pack mini-app archives
-        run: node scripts/pack-miniapps.mjs
+      - name: Pack mini-app archives and SDK
+        run: |
+          node scripts/pack-miniapps.mjs
+          mkdir -p apps/shell-mobile/www/assets
+          cp miniapps/_sdk/MappHub.js apps/shell-mobile/www/assets/MappHub.js
 
       - name: Generate Android project
         working-directory: apps/shell-mobile

@@ -2,38 +2,91 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MappHub Launcher</title>
   <script src="https://mapp.local/MappHub.js"></script>
   <style>
-    body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 40px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; box-sizing: border-box; }
-    h1 { margin-bottom: 8px; }
-    p { color: #94a3b8; margin-bottom: 30px; }
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; max-width: 400px; }
-    .app-card { background: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; }
-    .app-card:hover { background: #334155; }
-    .app-card h3 { margin: 0 0 8px; font-size: 1.1rem; }
-    .app-card span { font-size: 0.85rem; color: #94a3b8; }
+    html, body { height: 100%; margin: 0; }
+    body { background: #0f172a; color: #f8fafc; font-family: sans-serif; padding: 24px 16px; box-sizing: border-box; display: flex; flex-direction: column; }
+    h1 { margin: 0 0 4px; font-size: 1.4rem; }
+    #status { color: #94a3b8; font-size: 0.9rem; margin: 0 0 20px; min-height: 1.2em; }
+    #status.error { color: #f87171; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 20px 12px; }
+    .tile { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; color: inherit; cursor: pointer; padding: 4px; font: inherit; }
+    .tile:active .icon { transform: scale(0.94); }
+    .icon { width: 64px; height: 64px; border-radius: 16px; background: var(--tile-color); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700; color: #fff; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.35); transition: transform 0.1s; }
+    .icon img { width: 100%; height: 100%; object-fit: cover; }
+    .label { font-size: 0.8rem; text-align: center; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   </style>
 </head>
 <body>
   <h1>MappHub</h1>
-  <p>Выберите мини-приложение</p>
-  <div class="grid">
-    <div class="app-card" onclick="launchApp('com.mapphub.samplegame')">
-      <h3>Sample Game</h3><span>HTML5 демо</span>
-    </div>
-    <div class="app-card" onclick="testRpc()">
-      <h3>Test API</h3><span>Проверка RPC</span>
-    </div>
-  </div>
+  <p id="status">Загрузка приложений...</p>
+  <div id="grid" class="grid"></div>
   <script>
-    function launchApp(appId) {
-      MappHub.call("shell.navigate", { appId });
+    const LAUNCHER_ID = "com.mapphub.launcher";
+    const statusEl = document.getElementById("status");
+    const gridEl = document.getElementById("grid");
+
+    function setStatus(text, isError) {
+      statusEl.textContent = text;
+      statusEl.className = isError ? "error" : "";
     }
-    function testRpc() {
-      MappHub.call("notifications.alert", { title: "Launcher", message: "RPC-мост работает" });
+
+    function colorFor(id) {
+      let hash = 0;
+      for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return `hsl(${hash % 360} 55% 42%)`;
     }
+
+    function tileFor(app) {
+      const tile = document.createElement("button");
+      tile.className = "tile";
+      tile.onclick = () => launch(app.id);
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      icon.style.setProperty("--tile-color", colorFor(app.id));
+      if (app.icon) {
+        const img = document.createElement("img");
+        img.alt = "";
+        img.src = `https://miniapp-${app.id}.local/${app.icon}`;
+        img.onerror = () => {
+          img.remove();
+          icon.textContent = app.name.charAt(0).toUpperCase();
+        };
+        icon.append(img);
+      } else {
+        icon.textContent = app.name.charAt(0).toUpperCase();
+      }
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = app.name;
+      tile.append(icon, label);
+      return tile;
+    }
+
+    function launch(appId) {
+      MappHub.call("shell.navigate", { appId }).catch((err) => setStatus(`Не удалось открыть: ${err.message}`, true));
+    }
+
+    async function loadApps() {
+      if (typeof MappHub === "undefined") {
+        setStatus("MappHub SDK недоступен", true);
+        return;
+      }
+      try {
+        const { apps } = await MappHub.call("miniapp.list");
+        const visible = apps.filter((app) => app.id !== LAUNCHER_ID);
+        gridEl.replaceChildren(...visible.map(tileFor));
+        setStatus(visible.length ? "" : "Нет установленных приложений");
+      } catch (err) {
+        setStatus(`Не удалось загрузить список: ${err.message}`, true);
+      }
+    }
+
+    loadApps();
   </script>
 </body>
 </html>
