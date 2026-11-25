@@ -4,14 +4,14 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 const OUT = "CHANGELOG.md";
 const SECTIONS = [
-  ["feat", "Добавлено"],
-  ["fix", "Исправлено"],
-  ["refactor", "Рефакторинг"],
-  ["docs", "Документация"],
-  ["test", "Тесты"],
-  ["chore", "Служебное"],
+  ["feat", "Added"],
+  ["fix", "Fixed"],
+  ["refactor", "Refactoring"],
+  ["docs", "Documentation"],
+  ["test", "Tests"],
+  ["chore", "Chores"],
 ];
-const OTHER = "Прочее";
+const OTHER = "Other";
 const SUBJECT = /^(\w+)(\(([^)]*)\))?!?:\s*(.+)$/;
 
 function git(args) {
@@ -65,7 +65,7 @@ function renderSections(commits) {
     if (items.length === 0) continue;
     lines.push(`### ${title}`, "", ...items, "");
   }
-  return lines.length ? lines : ["_Нет заметных изменений._", ""];
+  return lines.length ? lines : ["_No notable changes._", ""];
 }
 
 function render() {
@@ -73,7 +73,7 @@ function render() {
   const lines = [
     "# Changelog",
     "",
-    "Раздел формируется автоматически из Conventional Commits: `node scripts/changelog.mjs`.",
+    "This file is generated automatically from Conventional Commits: `node scripts/changelog.mjs`.",
     "",
   ];
 
@@ -95,7 +95,7 @@ const next = render();
 const current = existsSync(OUT) ? readFileSync(OUT, "utf8") : null;
 if (current !== next) {
   writeFileSync(OUT, next);
-  console.log(`${OUT} обновлён`);
+  console.log(`${OUT} updated`);
 } else {
-  console.log(`${OUT} без изменений`);
+  console.log(`${OUT} unchanged`);
 }
