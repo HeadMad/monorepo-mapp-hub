@@ -4,21 +4,21 @@
 
 ## 1. Где взять мост
 
-Файл: [`miniapps/_sdk/mapp-bridge.js`](../miniapps/_sdk/mapp-bridge.js). Репозиторий публичный, скачать можно по прямой ссылке:
+Файл: [`miniapps/_sdk/MappHub.js`](../miniapps/_sdk/MappHub.js). Репозиторий публичный, скачать можно по прямой ссылке:
 
 ```
-https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/_sdk/mapp-bridge.js
+https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/_sdk/MappHub.js
 ```
 
-Рекомендуемый способ: скопировать файл в свой проект как `_sdk/mapp-bridge.js` и подключать локально. Так мини-приложение работает без сети и не зависит от изменений в репозитории.
+Рекомендуемый способ: скопировать файл в свой проект как `_sdk/MappHub.js` и подключать локально. Так мини-приложение работает без сети и не зависит от изменений в репозитории.
 
 Подключение классическим скриптом, до своего кода:
 
 ```html
-<script src="_sdk/mapp-bridge.js"></script>
+<script src="_sdk/MappHub.js"></script>
 <script>
   (async () => {
-    const res = await MappHub.device("info");
+    const res = await MappHub.call("device.info");
     if (res.ok) console.log(res.result);
     else console.error(res.message);
   })();
@@ -78,7 +78,7 @@ if (saved.ok && saved.result.value !== null) {
 ## 5. Пример: проверка обновлений оболочки
 
 ```js
-const res = await MappHub.shell("checkUpdate", { includeBeta: false });
+const res = await MappHub.call("shell.checkUpdate", { includeBeta: false });
 if (res.ok && res.result.hasUpdate) {
   console.log("Доступна версия", res.result.targetVersion);
 }

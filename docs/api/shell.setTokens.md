@@ -13,7 +13,7 @@
 
 ## Вызов
 ```js
-await MappHub.shell("setTokens", { tokens: { primary: "#22c55e" } });
+await MappHub.call("shell.setTokens", { tokens: { primary: "#22c55e" } });
 // задает --app-primary и отправляет { type: "TOKENS_UPDATED", tokens } в iframe
 ```
 

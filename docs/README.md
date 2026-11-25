@@ -12,4 +12,4 @@
 | Задачи проекта | Разработчики и ИИ-агенты | [../tasks/](../tasks/) |
 | Точка входа для ИИ-агентов | ИИ-агенты | [../AGENT_CONTEXT.md](../AGENT_CONTEXT.md) |
 
-Мост для мини-приложений лежит в репозитории: [miniapps/_sdk/mapp-bridge.js](../miniapps/_sdk/mapp-bridge.js).
+Мост для мини-приложений лежит в репозитории: [miniapps/_sdk/MappHub.js](../miniapps/_sdk/MappHub.js).

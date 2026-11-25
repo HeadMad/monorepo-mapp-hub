@@ -15,7 +15,7 @@
 
 ## Вызов
 ```js
-await MappHub.shell("navigate", { url: "miniapps/sample-game/index.html" });
+await MappHub.call("shell.navigate", { url: "miniapps/sample-game/index.html" });
 // { ok: true, result: { success: true } }
 ```
 

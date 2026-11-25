@@ -1,6 +1,6 @@
 # RPC-мост и протокол
 
-Мост для мини-приложений: [miniapps/_sdk/mapp-bridge.js](../miniapps/_sdk/mapp-bridge.js). Как им пользоваться, см. [руководство](miniapp-development.md). Список экшенов: [api/README.md](api/README.md).
+Мост для мини-приложений: [miniapps/_sdk/MappHub.js](../miniapps/_sdk/MappHub.js). Как им пользоваться, см. [руководство](miniapp-development.md). Список экшенов: [api/README.md](api/README.md).
 
 ## Транспорт (JSON-RPC 2.0 поверх postMessage)
 

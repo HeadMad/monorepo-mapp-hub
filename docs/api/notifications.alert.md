@@ -14,7 +14,7 @@
 
 ## Вызов
 ```js
-await MappHub.notifications("alert", { title: "Готово", message: "Файл сохранен" });
+await MappHub.call("notifications.alert", { title: "Готово", message: "Файл сохранен" });
 // { ok: true, result: { status: "acknowledged" } }
 ```
 

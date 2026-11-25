@@ -8,7 +8,7 @@
 
 ## Вызов
 ```js
-const res = await MappHub.device("info");
+const res = await MappHub.call("device.info");
 ```
 
 ## Ответ

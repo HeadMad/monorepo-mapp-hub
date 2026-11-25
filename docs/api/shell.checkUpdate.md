@@ -13,7 +13,7 @@
 
 ## Вызов
 ```js
-const res = await MappHub.shell("checkUpdate", { includeBeta: true });
+const res = await MappHub.call("shell.checkUpdate", { includeBeta: true });
 // { ok: true, result: { currentVersion, targetVersion, hasUpdate, channel, changelog } }
 ```
 

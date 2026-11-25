@@ -1,6 +1,6 @@
 # TASK-016: Монтирование мини-приложений на виртуальный домен miniapp-<id>.local
 
-## Status: Backlog
+## Status: In progress (частично)
 ## Priority: High
 
 ### Description
@@ -15,3 +15,8 @@
 
 ### Depends on
 - TASK-009..TASK-014.
+
+### Progress
+- Done: launcher и sample-game переведены на `MappHub.js` (`MappHub.call`), `mapp-bridge.js` удалён из ссылок кода и документации.
+- Not done: установка встроенных приложений из APK в `noBackupFilesDir` и регистрация в `system_registry`; перевод iframe на `https://miniapp-<id>.local/`; проверка на устройстве.
+- Note: `archiveUrl` в `mappmanifest.json` указывает на `miniapps/*.zip`, которых в репозитории нет.

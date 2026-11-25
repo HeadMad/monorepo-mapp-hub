@@ -133,6 +133,7 @@
   };
 
   window.MappHub = {
+    call,
     storage,
     ui,
     theme,
