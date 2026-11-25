@@ -4,6 +4,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Chores
+
+- point beta channel to v0.2.0-beta.5 in release-manifest (d6605bf)
+
+## v0.2.0-beta.5 — 2026-11-25
+
 ### Added
 
 - **shell:** debug console, service host, browser mini-app; bump to 0.2.0-beta.5 (adcdb31)
