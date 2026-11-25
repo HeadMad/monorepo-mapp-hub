@@ -1,10 +1,6 @@
 name: Build Android Shell APK
 
 on:
-  push:
-    branches: [ main ]
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -30,7 +26,6 @@ jobs:
         run: |
           cd apps/shell-mobile
           npm install
-          npm install -g @capacitor/cli @capacitor/core
 
       - name: Add Android Platform & Build Web Assets
         run: |
@@ -49,20 +44,3 @@ jobs:
         with:
           name: mapphub-shell-android-debug
           path: apps/shell-mobile/android/app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: apps/shell-mobile/android/app/build/outputs/apk/debug/app-debug.apk
-          name: MappHub Shell v0.1.0-beta.1
-          body: |
-            ## MappHub Shell v0.1.0-beta.1 (Pre-Alpha / Beta)
-            
-            - Initial experimental build with dynamic RPC bridge.
-            - Universal modal window for system notices & permissions.
-            - Folder-based task tracking structure.
-          draft: false
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
