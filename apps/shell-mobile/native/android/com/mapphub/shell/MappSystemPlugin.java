@@ -24,11 +24,13 @@ public class MappSystemPlugin extends Plugin {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private MappDatabaseHelper db;
     private MappPackageManager packages;
+    private MappLocalAssetHandler assets;
 
     @Override
     public void load() {
         db = MappDatabaseHelper.getInstance(getContext());
         packages = MappPackageManager.getInstance(getContext());
+        assets = MappLocalAssetHandler.getInstance(getContext());
     }
 
     @PluginMethod
