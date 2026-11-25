@@ -1,9 +1,9 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.1.0-beta.2",
+    "betaVersion": "0.1.0-beta.3",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "changelog": "Beta 0.1.0-beta.2: динамический RPC-мост и модульная архитектура API."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.3/mapphub-shell-v0.1.0-beta.3.apk",
+    "changelog": "Beta 0.1.0-beta.3: нативный слой MappHub (SQLite mapp_system.db, менеджер пакетов с защитой от Zip Slip, виртуальные домены mapp.local и miniapp-*.local, плагин MappSystem), клиентский sdk.js и мост MappHostBridge."
   }
 }
