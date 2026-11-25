@@ -6,6 +6,7 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Added
 
+- **miniapps:** mount bundled mini-apps on miniapp-<id>.local (TASK-016) (98bb322)
 - migrate launcher and sample-game to MappHub.js, expose MappHub.call; update docs, changelog and v0.2.0-beta.2 release notes (9c11740)
 - rename sdk.js to MappHub.js, bump version to v0.2.0-beta.2, update changelog (cb85a4b)
 - **native:** theme storage in system_kv, MappThemeCss validation, mapp.local asset handler with Rhino generators (ddb8094)
@@ -18,12 +19,14 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Documentation
 
+- switch changelog generator and release notes to English (12d195f)
 - finalize changelog for v0.2.0-beta.2 (9068e53)
 - add release notes for v0.2.0-beta.2 (7456c8c)
 - add architecture part 2 spec and TASK-009..016 (themes, asset handler, event bus, theme editor, changelog) (bc059e9)
 
 ### Chores
 
+- bump shell to 0.2.0-beta.3 and add release notes (1f00700)
 - sync all unstaged files and MappHub SDK rename (d0bc81a)
 - point beta channel to v0.1.0-beta.3 (786db2e)
 
