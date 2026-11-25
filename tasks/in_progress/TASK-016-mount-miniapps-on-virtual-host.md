@@ -18,5 +18,6 @@
 
 ### Progress
 - Done: launcher и sample-game переведены на `MappHub.js` (`MappHub.call`), `mapp-bridge.js` удалён из ссылок кода и документации.
-- Not done: установка встроенных приложений из APK в `noBackupFilesDir` и регистрация в `system_registry`; перевод iframe на `https://miniapp-<id>.local/`; проверка на устройстве.
-- Note: `archiveUrl` в `mappmanifest.json` указывает на `miniapps/*.zip`, которых в репозитории нет.
+- Done (code, not device-tested): bundled mini-apps are copied from APK assets into `noBackupFilesDir` and registered in `system_registry` (`MappSystem.installBundledMiniApp`); `runtime.js` opens them on `https://miniapp-<id>.local/`; the bridge is mounted per iframe; `MappHub.js` is loaded from `https://mapp.local/MappHub.js`.
+- Not done: check on a physical Android device (launcher, sample-game, theme-editor, theme bridge).
+- Note: `archiveUrl` in `mappmanifest.json` points to `miniapps/*.zip`, which the repository does not contain; bundled installs do not use it.
