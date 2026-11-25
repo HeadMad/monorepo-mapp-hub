@@ -4,18 +4,13 @@
 
 ## Unreleased
 
-### Добавлено
-
-- rename sdk.js to MappHub.js, bump version to v0.2.0-beta.2, update changelog (cb85a4b)
-- **native:** theme storage in system_kv, MappThemeCss validation, mapp.local asset handler with Rhino generators (ddb8094)
-
 ### Документация
 
-- add architecture part 2 spec and TASK-009..016 (themes, asset handler, event bus, theme editor, changelog) (bc059e9)
+- add release notes for v0.2.0-beta.2 (7456c8c)
 
 ### Служебное
 
-- point beta channel to v0.1.0-beta.3 (786db2e)
+- sync all unstaged files and MappHub SDK rename (d0bc81a)
 
 ## v0.2.0-beta.2 — 2026-11-25
 
