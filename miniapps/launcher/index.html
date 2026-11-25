@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>MappHub Launcher</title>
+  <script src="../_sdk/mapp-bridge.js"></script>
   <style>
     body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 40px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; box-sizing: border-box; }
@@ -19,7 +20,7 @@
   <h1>MappHub</h1>
   <p>Выберите мини-приложение</p>
   <div class="grid">
-    <div class="app-card" onclick="launchApp('../sample-game/index.html')">
+    <div class="app-card" onclick="launchApp('sample-game/index.html')">
       <h3>Sample Game</h3><span>HTML5 демо</span>
     </div>
     <div class="app-card" onclick="testRpc()">
@@ -28,11 +29,10 @@
   </div>
   <script>
     function launchApp(url) {
-      window.parent.postMessage({ jsonrpc: "2.0", method: "shell.navigate", params: { url }, id: Date.now() }, "*");
+      MappHub.shell("navigate", { url: "miniapps/" + url });
     }
-    function testRpc() {
-      window.parent.postMessage({ jsonrpc: "2.0", method: "notifications.alert",
-        params: { title: "Launcher", message: "RPC-мост работает" }, id: Date.now() }, "*");
+    async function testRpc() {
+      await MappHub.notifications("alert", { title: "Launcher", message: "RPC-мост работает" });
     }
   </script>
 </body>

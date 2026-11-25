@@ -4,7 +4,7 @@ export default async function(params, context) {
     const response = await fetch("https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/release-manifest.json");
     if (!response.ok) throw new Error("Failed to fetch release manifest");
     const data = await response.json();
-    const currentVersion = "1.0.0"; // Shell's current hardcoded version
+    const currentVersion = "0.1.0-beta.1";
     
     const targetVersion = includeBeta ? data.shell.betaVersion : data.shell.version;
     const updateUrl = includeBeta ? data.shell.betaUrl : data.shell.stableUrl;

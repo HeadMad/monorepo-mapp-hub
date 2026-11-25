@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Sample HTML5 Game</title>
+  <script src="../_sdk/mapp-bridge.js"></script>
   <style>
     body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 30px; text-align: center; }
     button { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 10px; }
@@ -16,32 +17,19 @@
   <button onclick="getDeviceInfo()">Информация об устройстве</button>
   <button onclick="showAlert()">Вызвать уведомление</button><br>
   <button class="back" onclick="goBack()">Назад в лаунчер</button>
-  <div id="output">Готов к RPC-вызовам</div>
+  <div id="output">Готов к вызовам</div>
   <script>
-    let rpcId = 1;
-    function callRpc(method, params = {}) {
-      return new Promise((resolve, reject) => {
-        const id = "req_" + rpcId++;
-        const handler = (event) => {
-          if (event.data && event.data.jsonrpc === "2.0" && event.data.id === id) {
-            window.removeEventListener("message", handler);
-            event.data.error ? reject(event.data.error) : resolve(event.data.result);
-          }
-        };
-        window.addEventListener("message", handler);
-        window.parent.postMessage({ jsonrpc: "2.0", method, params, id }, "*");
-      });
-    }
+    const output = document.getElementById("output");
+
     async function getDeviceInfo() {
-      const out = document.getElementById("output");
-      try { out.textContent = JSON.stringify(await callRpc("device.info"), null, 2); }
-      catch (err) { out.textContent = "Ошибка: " + JSON.stringify(err); }
+      const res = await MappHub.device("info");
+      output.textContent = res.ok ? JSON.stringify(res.result, null, 2) : "Ошибка: " + res.message;
     }
     async function showAlert() {
-      await callRpc("notifications.alert", { title: "Mini-App", message: "Привет из мини-приложения!" });
+      await MappHub.notifications("alert", { title: "Mini-App", message: "Привет из мини-приложения!" });
     }
     async function goBack() {
-      await callRpc("shell.navigate", { url: "../launcher/index.html" });
+      await MappHub.shell("navigate", { url: "miniapps/launcher/index.html" });
     }
   </script>
 </body>
