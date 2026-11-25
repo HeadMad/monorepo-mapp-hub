@@ -11,8 +11,8 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         getBridge().getWebView().setWebViewClient(new MappWebViewClient(
                 getBridge(),
-                this,
                 MappDatabaseHelper.getInstance(this),
-                MappPackageManager.getInstance(this)));
+                MappPackageManager.getInstance(this),
+                MappLocalAssetHandler.getInstance(this)));
     }
 }

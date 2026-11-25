@@ -15,6 +15,36 @@ import java.util.Map;
 public class MappDatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "mapp_system.db";
     private static final int DB_VERSION = 1;
+    private static final String LIGHT_CSS = ":root {\n"
+            + "  --mapp-color-bg: #f5f6f8;\n"
+            + "  --mapp-color-surface: #ffffff;\n"
+            + "  --mapp-color-text: #1c1f24;\n"
+            + "  --mapp-color-muted: #6b7280;\n"
+            + "  --mapp-color-primary: #2563eb;\n"
+            + "  --mapp-color-primary-text: #ffffff;\n"
+            + "  --mapp-color-border: #d1d5db;\n"
+            + "  --mapp-color-danger: #dc2626;\n"
+            + "  --mapp-radius-sm: 6px;\n"
+            + "  --mapp-radius-md: 12px;\n"
+            + "  --mapp-radius-lg: 20px;\n"
+            + "  --mapp-font-family: 'Roboto', system-ui, sans-serif;\n"
+            + "  --mapp-font-size-base: 16px;\n"
+            + "}\n";
+    private static final String DARK_CSS = ":root {\n"
+            + "  --mapp-color-bg: #0f1115;\n"
+            + "  --mapp-color-surface: #181b22;\n"
+            + "  --mapp-color-text: #e5e7eb;\n"
+            + "  --mapp-color-muted: #9ca3af;\n"
+            + "  --mapp-color-primary: #3b82f6;\n"
+            + "  --mapp-color-primary-text: #ffffff;\n"
+            + "  --mapp-color-border: #2d3340;\n"
+            + "  --mapp-color-danger: #ef4444;\n"
+            + "  --mapp-radius-sm: 6px;\n"
+            + "  --mapp-radius-md: 12px;\n"
+            + "  --mapp-radius-lg: 20px;\n"
+            + "  --mapp-font-family: 'Roboto', system-ui, sans-serif;\n"
+            + "  --mapp-font-size-base: 16px;\n"
+            + "}\n";
     private static MappDatabaseHelper instance;
 
     private MappDatabaseHelper(Context context) {
@@ -51,10 +81,31 @@ public class MappDatabaseHelper extends SQLiteOpenHelper {
                 + "value TEXT NOT NULL,"
                 + "updated_at INTEGER DEFAULT (strftime('%s', 'now')),"
                 + "PRIMARY KEY (namespace, key)) WITHOUT ROWID");
+        seedDefaults(db);
+    }
+
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+        if (!db.isReadOnly()) seedDefaults(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+
+    private static void seedDefaults(SQLiteDatabase db) {
+        insertIfAbsent(db, "themes", "light", LIGHT_CSS);
+        insertIfAbsent(db, "themes", "dark", DARK_CSS);
+        insertIfAbsent(db, "config", "active_theme", "light");
+    }
+
+    private static void insertIfAbsent(SQLiteDatabase db, String namespace, String key, String value) {
+        ContentValues cv = new ContentValues();
+        cv.put("namespace", namespace);
+        cv.put("key", key);
+        cv.put("value", value);
+        db.insertWithOnConflict("system_kv", null, cv, SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     public void putStorageItem(String appId, String key, String value) {
@@ -144,6 +195,40 @@ public class MappDatabaseHelper extends SQLiteOpenHelper {
                 "namespace = ? AND key = ?", new String[]{namespace, key}, null, null, null)) {
             return c.moveToFirst() ? c.getString(0) : null;
         }
+    }
+
+    public static boolean isBuiltinTheme(String themeId) {
+        return "light".equals(themeId) || "dark".equals(themeId);
+    }
+
+    public static String builtinThemeCss(String themeId) {
+        return "light".equals(themeId) ? LIGHT_CSS : DARK_CSS;
+    }
+
+    public List<String> listThemeIds() {
+        List<String> ids = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("system_kv", new String[]{"key"},
+                "namespace = ?", new String[]{"themes"}, null, null, "key")) {
+            while (c.moveToNext()) ids.add(c.getString(0));
+        }
+        return ids;
+    }
+
+    public String getThemeCss(String themeId) {
+        return getSystem("themes", themeId);
+    }
+
+    public void putThemeCss(String themeId, String css) {
+        putSystem("themes", themeId, css);
+    }
+
+    public String getActiveThemeId() {
+        String id = getSystem("config", "active_theme");
+        return id != null ? id : "light";
+    }
+
+    public void setActiveThemeId(String themeId) {
+        putSystem("config", "active_theme", themeId);
     }
 
     private static Map<String, Object> registryRow(Cursor c) {

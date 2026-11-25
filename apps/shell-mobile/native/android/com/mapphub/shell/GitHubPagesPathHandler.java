@@ -69,6 +69,15 @@ public class GitHubPagesPathHandler {
         }
     }
 
+    public static String encodingFor(String mime) {
+        boolean textual = mime.startsWith("text/")
+                || mime.equals("application/javascript")
+                || mime.equals("application/json")
+                || mime.equals("application/manifest+json")
+                || mime.equals("image/svg+xml");
+        return textual ? "UTF-8" : null;
+    }
+
     private static String normalize(String rawPath) {
         if (rawPath == null) return "";
         return rawPath.replaceAll("^/+", "").replaceAll("/+$", "");
