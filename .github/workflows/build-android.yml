@@ -4,13 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Версия релиза без префикса v'
+        description: 'Версия релиза без префикса v, например 0.3.0-beta.1'
         required: true
-        default: '0.1.0-beta.1'
+        default: '0.3.0-beta.1'
       prerelease:
         description: 'Отметить релиз как pre-release'
         type: boolean
         default: true
+      release_notes:
+        description: 'Описание релиза (необязательно, иначе возьмется из docs/releases/<версия>.md)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -24,6 +28,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate version
+        run: |
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$'; then
+            echo "Версия должна быть semver: X.Y.Z или X.Y.Z-beta.N"; exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,7 +53,7 @@ jobs:
       - name: Bundle mini-apps into web assets
         run: |
           mkdir -p apps/shell-mobile/www/miniapps
-          cp -r miniapps/launcher miniapps/sample-game apps/shell-mobile/www/miniapps/
+          cp -r miniapps/launcher miniapps/sample-game miniapps/_sdk apps/shell-mobile/www/miniapps/
 
       - name: Generate Android project
         working-directory: apps/shell-mobile
@@ -51,14 +61,79 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Build debug APK
+      - name: Set versionName and stable versionCode
+        working-directory: apps/shell-mobile/android/app
+        run: |
+          # versionCode монотонно растет: major*10000 + minor*100 + patch, чтобы Android принял обновление поверх старой версии
+          CODE=$(python3 - "$VERSION" << 'PY'
+          import re, sys
+          m = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)\.(\d+))?', sys.argv[1])
+          base = (int(m.group(1))*10000 + int(m.group(2))*100 + int(m.group(3))) * 100
+          if m.group(4) is None:
+              stage = 99
+          else:
+              stage = {'alpha': 0, 'beta': 20, 'rc': 50}[m.group(4)] + int(m.group(5))
+              assert 0 < stage < 99, 'pre-release number out of range'
+          print(base + stage)
+          PY
+          )
+          sed -i "s/versionCode [0-9]*/versionCode $CODE/; s/versionName \".*\"/versionName \"$VERSION\"/" build.gradle
+          grep -E "versionCode|versionName" build.gradle
+
+      - name: Write release signing config
+        working-directory: apps/shell-mobile/android/app
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > keystore.properties << EOP
+          storeFile=$RUNNER_TEMP/release.jks
+          storePassword=$KS_PASS
+          keyAlias=$KS_ALIAS
+          keyPassword=$KEY_PASS
+          EOP
+          python3 - << 'PY'
+          import re
+          p = "build.gradle"
+          s = open(p).read()
+          cfg = """
+          def keystoreProps = new Properties()
+          def keystoreFile = file("keystore.properties")
+          if (keystoreFile.exists()) { keystoreProps.load(new FileInputStream(keystoreFile)) }
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file(keystoreProps['storeFile'])
+                      storePassword keystoreProps['storePassword']
+                      keyAlias keystoreProps['keyAlias']
+                      keyPassword keystoreProps['keyPassword']
+                  }
+              }
+              buildTypes {
+                  release { signingConfig signingConfigs.release }
+              }
+          }
+          """
+          s = s.rstrip() + "\n" + cfg
+          open(p, "w").write(s)
+          PY
+
+      - name: Build signed release APK
         working-directory: apps/shell-mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Rename APK
-        run: cp apps/shell-mobile/android/app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+        run: cp apps/shell-mobile/android/app/build/outputs/apk/release/app-release.apk "$APK_NAME"
+
+      - name: Verify signature
+        run: |
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK_NAME" | head -5 || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -69,20 +144,18 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTES_INPUT: ${{ inputs.release_notes }}
         run: |
           PRERELEASE_FLAG=""
           if [ "${{ inputs.prerelease }}" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
-          cat > release-notes.md << 'NOTES'
-          Первая сборка оболочки, которую можно пощупать руками. Это бета, так что шероховатости ожидаемы.
-
-          Что внутри:
-          - RPC-мост между оболочкой и мини-приложениями в стиле Telegram Bot API
-          - Динамически подгружаемые API-экшены (device, notifications, storage)
-          - Единое модальное окно для системных уведомлений
-          - Лаунчер и демо-мини-приложение внутри APK
-
-          Пока не готово: установка мини-приложений с чекбоксами разрешений, прогресс-бар, самообновление оболочки.
-          NOTES
+          NOTES_FILE="docs/releases/v$VERSION.md"
+          if [ -n "$NOTES_INPUT" ]; then
+            printf '%s\n' "$NOTES_INPUT" > release-notes.md
+          elif [ -f "$NOTES_FILE" ]; then
+            cp "$NOTES_FILE" release-notes.md
+          else
+            echo "Нет описания релиза: заполни release_notes или добавь $NOTES_FILE"; exit 1
+          fi
           gh release create "v$VERSION" "$APK_NAME" \
             --target "$GITHUB_SHA" \
             --title "MappHub Shell v$VERSION" \
