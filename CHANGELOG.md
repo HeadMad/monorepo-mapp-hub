@@ -68,3 +68,4 @@
 ### Прочее
 
 - add GitHub Actions workflow for building Android APK and update version to 0.1.0-beta.1 across all manifests (8194948)
+## v0.2.0-beta.2 (2026-11-25)
