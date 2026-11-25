@@ -3,6 +3,7 @@ const SETTINGS_KEY = "mapp_shell_settings";
 const DEFAULT_SETTINGS = {
   includeBeta: false,            // устанавливать бета-версии оболочки
   skipShellUpdatePrompt: false,  // «Больше не показывать» для обновлений оболочки
+  startAppId: null,              // мини-приложение, которое открывается при запуске оболочки
   skipAppUpdatePrompt: {},       // appId -> true, «Больше не показывать» для мини-приложений
 };
 

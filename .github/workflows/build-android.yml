@@ -50,12 +50,8 @@ jobs:
         working-directory: apps/shell-mobile
         run: npm install
 
-      - name: Bundle mini-apps into web assets
-        run: |
-          mkdir -p apps/shell-mobile/www/miniapps
-          cp -r miniapps/launcher miniapps/sample-game miniapps/theme-editor miniapps/_sdk apps/shell-mobile/www/miniapps/
-          mkdir -p apps/shell-mobile/www/assets
-          cp miniapps/_sdk/MappHub.js apps/shell-mobile/www/assets/MappHub.js
+      - name: Pack mini-app archives
+        run: node scripts/pack-miniapps.mjs
 
       - name: Generate Android project
         working-directory: apps/shell-mobile
@@ -170,7 +166,7 @@ jobs:
           else
             echo "Нет описания релиза: заполни release_notes или добавь $NOTES_FILE"; exit 1
           fi
-          gh release create "v$VERSION" "$APK_NAME" \
+          gh release create "v$VERSION" "$APK_NAME" dist/miniapps/* \
             --target "$GITHUB_SHA" \
             --title "MappHub Shell v$VERSION" \
             --notes-file release-notes.md \

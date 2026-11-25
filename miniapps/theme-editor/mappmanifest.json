@@ -5,6 +5,5 @@
   "permissions": [
     "system.theme.read",
     "system.theme.write"
-  ],
-  "archiveUrl": "https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/theme-editor.zip"
+  ]
 }

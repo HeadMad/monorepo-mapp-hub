@@ -1,68 +1,30 @@
 import { compareVersions } from "../../version.js";
 import { getInstalled, saveInstalled } from "../../core/store.js";
 
-// Установка мини-приложения по mappmanifest.json.
-// Шаг 1: список разрешений с галочками. Шаг 2 (если сняты галочки): предупреждение «Назад» / «Продолжить».
-// «Назад» возвращает к шагу 1 с сохраненными галочками. Выданные разрешения пишутся в запись приложения.
+// Установка мини-приложения: разрешения (галочками или автоматически в тихом режиме),
+// затем загрузка архива в нативный слой с проверкой SHA-256.
 export default async function (params = {}, context) {
+  const log = params.log || (() => {});
   const manifest = params.manifest || (await loadManifest(params.manifestUrl));
   validate(manifest);
 
   const requested = manifest.permissions || [];
-  const prior = getInstalled(manifest.id);
-  const priorGranted = prior ? prior.permissions || [] : null;
-  const checks = requested.map((p) => ({
-    id: p,
-    label: p,
-    checked: priorGranted ? priorGranted.includes(p) : true,
-  }));
+  const granted = params.silent ? requested : await askPermissions(manifest, requested, context);
+  if (!granted) return { installed: false };
+  log(`разрешения: ${granted.length ? granted.join(", ") : "нет"}`);
 
-  let granted = [];
-  for (;;) {
-    const step = await context.openModal({
-      title: `Установка: ${manifest.name}`,
-      message: `Версия ${manifest.version}\n\n` + (requested.length
-        ? "Приложение запрашивает разрешения. Снимите галочки с тех, которые не хотите выдавать:"
-        : "Особых разрешений не требуется."),
-      checkboxes: checks,
-      buttons: [{ id: "cancel", text: "Отмена" }, { id: "install", text: "Установить", primary: true }],
-    }).promise;
-    if (step.action !== "install") return { installed: false };
-
-    for (const c of checks) c.checked = !!step.checked[c.id];
-    granted = requested.filter((p) => step.checked[p]);
-    if (granted.length === requested.length) break;
-
-    const warn = await context.showModal({
-      title: "Внимание: нет части разрешений",
-      message: "Некоторые функции мини-приложения могут не работать без снятых разрешений.",
-      buttons: [{ id: "back", text: "Назад" }, { id: "proceed", text: "Продолжить", primary: true }],
-    });
-    if (warn.action === "proceed") break;
-  }
-
-  if (manifest.archiveUrl) {
-    const bar = context.openModal({
-      title: `Загрузка: ${manifest.name}`,
-      message: "Скачивание архива...",
-      progress: 0,
-      buttons: [{ id: "wait", text: "Загрузка...", disabled: true }],
-    });
-    try {
-      const bytes = await downloadWithProgress(manifest.archiveUrl, (pct) =>
-        bar.update({ progress: pct, message: `Скачивание... ${pct}%` }));
-      bar.update({
-        progress: 100,
-        message: `Архив загружен (${Math.round(bytes / 1024)} КБ). Распаковка в каталог приложения пока не реализована, записан манифест.`,
-        buttons: [{ id: "ok", text: "Готово", primary: true }],
-      });
-      await bar.promise;
-    } catch (e) {
-      bar.update({ message: `Ошибка загрузки: ${e.message}`, buttons: [{ id: "ok", text: "Закрыть", primary: true }] });
-      await bar.promise;
-      return { installed: false, error: e.message };
-    }
-  }
+  const archiveUrl = params.archiveUrl || manifest.archiveUrl;
+  if (!archiveUrl) throw new Error(`для ${manifest.id} не задан архив`);
+  log("загрузка архива");
+  await window.Capacitor.Plugins.MappSystem.installMiniAppArchive({
+    appId: manifest.id,
+    version: manifest.version,
+    name: manifest.name,
+    archiveUrl,
+    sha256: params.sha256 || null,
+    manifestJson: JSON.stringify(manifest),
+  });
+  log("архив распакован и проверен");
 
   saveInstalled({
     ...manifest,
@@ -72,6 +34,39 @@ export default async function (params = {}, context) {
     installedAt: new Date().toISOString(),
   });
   return { installed: true, appId: manifest.id, version: manifest.version, grantedPermissions: granted };
+}
+
+async function askPermissions(manifest, requested, context) {
+  const prior = getInstalled(manifest.id);
+  const priorGranted = prior ? prior.permissions || [] : null;
+  const checks = requested.map((p) => ({
+    id: p,
+    label: p,
+    checked: priorGranted ? priorGranted.includes(p) : true,
+  }));
+
+  for (;;) {
+    const step = await context.openModal({
+      title: `Установка: ${manifest.name}`,
+      message: `Версия ${manifest.version}\n\n` + (requested.length
+        ? "Приложение запрашивает разрешения. Снимите галочки с тех, которые не хотите выдавать:"
+        : "Особых разрешений не требуется."),
+      checkboxes: checks,
+      buttons: [{ id: "cancel", text: "Отмена" }, { id: "install", text: "Установить", primary: true }],
+    }).promise;
+    if (step.action !== "install") return null;
+
+    for (const c of checks) c.checked = !!step.checked[c.id];
+    const granted = requested.filter((p) => step.checked[p]);
+    if (granted.length === requested.length) return granted;
+
+    const warn = await context.showModal({
+      title: "Внимание: нет части разрешений",
+      message: "Некоторые функции мини-приложения могут не работать без снятых разрешений.",
+      buttons: [{ id: "back", text: "Назад" }, { id: "proceed", text: "Продолжить", primary: true }],
+    });
+    if (warn.action === "proceed") return granted;
+  }
 }
 
 async function loadManifest(url) {
@@ -87,20 +82,5 @@ function validate(m) {
     if (typeof m[key] !== "string" || !m[key]) throw new Error(`В манифесте нет поля ${key}`);
   }
   if (m.permissions && !Array.isArray(m.permissions)) throw new Error("permissions должен быть массивом");
-  compareVersions(m.version, "0.0.0"); // бросит ошибку, если версия не semver
-}
-
-async function downloadWithProgress(url, onProgress) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const total = Number(res.headers.get("content-length")) || 0;
-  const reader = res.body.getReader();
-  let received = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    received += value.length;
-    if (total) onProgress(Math.round((received * 100) / total));
-  }
-  return received;
+  compareVersions(m.version, "0.0.0");
 }

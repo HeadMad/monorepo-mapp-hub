@@ -1,5 +1,6 @@
 import { SHELL_VERSION } from "./version.js";
-import { getInstalled, saveInstalled } from "./core/store.js";
+import { getInstalled, getSettings, saveInstalled } from "./core/store.js";
+import { runBundleInstall, LAUNCHER_ID } from "./installer/bundle.js";
 import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod } from "./bridge/MappHostBridge.js";
 
 // Разрешение, которое проверяется до вызова экшена. Отсутствие записи = разрешение не требуется.
@@ -11,17 +12,6 @@ const PERMISSION_MAP = {
   "miniapp.install": "miniapps.install",
   "shell.setTokens": "shell.tokens",
 };
-
-// Мини-приложения, которые поставляются внутри APK. Первый запуск ставит их через miniapp.install.
-const BUNDLED_APPS = [
-  { appId: "com.mapphub.launcher", assetDir: "miniapps/launcher", manifestUrl: "miniapps/launcher/mappmanifest.json", required: true },
-  { appId: "com.mapphub.samplegame", assetDir: "miniapps/sample-game", manifestUrl: "miniapps/sample-game/mappmanifest.json", required: false },
-  { appId: "com.mapphub.themeeditor", assetDir: "miniapps/theme-editor", manifestUrl: "miniapps/theme-editor/mappmanifest.json", required: false },
-];
-
-function bundledFor(url) {
-  return BUNDLED_APPS.find((a) => url === a.assetDir || url.startsWith(a.assetDir + "/")) || null;
-}
 
 function miniAppUrl(appId, path = "index.html") {
   return `https://miniapp-${appId}.local/${path}`;
@@ -55,7 +45,7 @@ class ModalEngine {
     state.handle = {
       promise: state.promise,
       update: (patch) => this.update(state, patch),
-      close: () => this.finish(state, { action: "closed", checked: this.collect(state) }),
+      close: () => this.finish(state, this.result(state, "closed")),
     };
     this.queue.push(state);
     if (!this.current) this.showNext();
@@ -82,8 +72,13 @@ class ModalEngine {
     this.render(this.current);
   }
 
-  collect(state) {
-    return Object.fromEntries((state.opts.checkboxes || []).map((c) => [c.id, !!c.checked]));
+  result(state, action) {
+    const o = state.opts;
+    return {
+      action,
+      checked: Object.fromEntries((o.checkboxes || []).map((c) => [c.id, !!c.checked])),
+      radios: Object.fromEntries((o.radios || []).map((r) => [r.id, r.value])),
+    };
   }
 
   finish(state, result) {
@@ -111,12 +106,34 @@ class ModalEngine {
       input.disabled = !!c.disabled;
       input.onchange = () => {
         c.checked = input.checked;
-        if (o.onChange) o.onChange(this.collect(state), state.handle);
+        if (o.onChange) o.onChange(this.result(state, null), state.handle);
       };
       const text = document.createElement("span");
       text.textContent = c.label;
       label.append(input, text);
       this.checksEl.append(label);
+    }
+
+    for (const r of o.radios || []) {
+      const group = document.createElement("div");
+      group.className = "modal-radio-group";
+      for (const opt of r.options) {
+        const label = document.createElement("label");
+        label.className = "modal-check";
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "radio-" + r.id;
+        input.value = opt.value;
+        input.checked = r.value === opt.value;
+        input.onchange = () => {
+          r.value = opt.value;
+        };
+        const text = document.createElement("span");
+        text.textContent = opt.label;
+        label.append(input, text);
+        group.append(label);
+      }
+      this.checksEl.append(group);
     }
 
     if (typeof o.progress === "number") {
@@ -133,7 +150,7 @@ class ModalEngine {
       btn.textContent = b.text;
       btn.className = b.primary ? "btn-primary" : "btn-secondary";
       btn.disabled = !!b.disabled;
-      btn.onclick = () => this.finish(state, { action: b.id || "ok", checked: this.collect(state) });
+      btn.onclick = () => this.finish(state, this.result(state, b.id || "ok"));
       this.actionsEl.append(btn);
     }
     this.el.style.display = "flex";
@@ -151,54 +168,19 @@ class MappShellRuntime {
   }
 
   async start() {
-    try {
-      await this.bootstrap();
-    } catch (e) {
-      console.error("Bootstrap:", e);
+    let startId = this.startAppId();
+    while (!startId) {
+      await runBundleInstall(this.apiContext(null));
+      startId = this.startAppId();
     }
-    const launcher = BUNDLED_APPS[0];
-    this.loadMiniApp(miniAppUrl(launcher.appId), launcher.appId);
+    this.loadMiniApp(miniAppUrl(startId), startId);
     this.checkShellUpdateOnStart();
   }
 
-  // Встроенные мини-приложения копируются из ассетов APK при каждом запуске; без лаунчера дальше не пускаем.
-  async bootstrap() {
-    for (const app of BUNDLED_APPS) {
-      for (;;) {
-        try {
-          await this.installBundled(app);
-          break;
-        } catch (e) {
-          if (!app.required) break;
-          await this.modal.openModal({
-            title: "Лаунчер не установлен",
-            message: `Ошибка: ${e.message}`,
-            buttons: [{ id: "retry", text: "Повторить", primary: true }],
-          }).promise;
-        }
-      }
-    }
-  }
-
-  async installBundled(app) {
-    const res = await fetch(app.manifestUrl, { cache: "no-store" });
-    if (!res.ok) throw new Error(`манифест ${app.manifestUrl} недоступен`);
-    const manifest = await res.json();
-    await window.Capacitor.Plugins.MappSystem.installBundledMiniApp({
-      appId: app.appId,
-      assetDir: app.assetDir,
-      version: manifest.version,
-      name: manifest.name,
-      manifestJson: JSON.stringify(manifest),
-    });
-    const prev = getInstalled(app.appId);
-    saveInstalled({
-      id: app.appId,
-      name: manifest.name,
-      version: manifest.version,
-      permissions: prev ? prev.permissions || [] : [],
-      requestedPermissions: manifest.permissions || [],
-    });
+  startAppId() {
+    const { startAppId } = getSettings();
+    if (startAppId && getInstalled(startAppId)) return startAppId;
+    return getInstalled(LAUNCHER_ID) ? LAUNCHER_ID : null;
   }
 
   async checkShellUpdateOnStart() {
@@ -264,18 +246,17 @@ class MappShellRuntime {
   }
 
   navigate(params) {
+    if (params.appId) {
+      if (!getInstalled(params.appId)) throw rpcError(-32004, "Мини-приложение не установлено");
+      this.loadMiniApp(miniAppUrl(params.appId), params.appId);
+      return { success: true, appId: params.appId };
+    }
     const url = String(params.url || "");
     if (!url || url.startsWith("/") || /^https?:/.test(url) || url.includes("..")) {
       throw rpcError(-32602, "Недопустимый путь: укажите путь относительно www");
     }
-    const bundled = bundledFor(url);
-    if (bundled) {
-      const path = url.slice(bundled.assetDir.length + 1) || "index.html";
-      this.loadMiniApp(miniAppUrl(bundled.appId, path), bundled.appId);
-    } else {
-      this.loadMiniApp(url, null);
-    }
-    return { success: true, appId: bundled ? bundled.appId : null };
+    this.loadMiniApp(url, null);
+    return { success: true, appId: null };
   }
 
   // Загрузка файла экшена: api/<category>/<action>.js. Имена проверяются регулярками, чтобы не выйти из папки api.

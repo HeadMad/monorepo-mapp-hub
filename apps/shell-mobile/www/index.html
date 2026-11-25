@@ -7,8 +7,17 @@
   <link rel="stylesheet" href="css/tokens.css">
   <style>
     html, body { height: 100%; margin: 0; padding: 0; background: var(--app-bg); color: var(--app-text); }
+    body { display: flex; flex-direction: column; overflow: hidden; }
     [hidden] { display: none !important; }
-    #app-frame { width: 100%; height: 100%; border: none; display: block; }
+    #app-frame { flex: 1 1 auto; min-height: 0; width: 100%; border: none; display: block; }
+    #install-bar { flex: none; position: relative; height: 28px; background: var(--app-card-bg); border-top: 1px solid var(--app-border); cursor: pointer; overflow: hidden; }
+    #install-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--app-primary); opacity: 0.35; transition: width 0.2s; }
+    #install-bar-text { position: relative; display: block; padding: 0 12px; line-height: 28px; font-size: 0.8rem; color: var(--app-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #install-console { position: fixed; left: 0; right: 0; bottom: 0; height: 50vh; z-index: 8000; display: flex; flex-direction: column; background: var(--app-card-bg); border-top: 1px solid var(--app-border); box-shadow: 0 -6px 16px rgba(0,0,0,0.4); }
+    .console-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--app-border); font-weight: 600; }
+    .console-head button { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; background: var(--app-primary); color: white; }
+    #install-log { flex: 1 1 auto; margin: 0; padding: 10px 12px; overflow-y: auto; font: 12px/1.45 monospace; white-space: pre-wrap; color: var(--app-text); }
+    .modal-radio-group { margin-top: 8px; }
     #system-modal {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
       z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
@@ -34,6 +43,19 @@
 </head>
 <body>
   <iframe id="app-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+
+  <div id="install-bar" hidden>
+    <div id="install-bar-fill"></div>
+    <span id="install-bar-text"></span>
+  </div>
+
+  <div id="install-console" hidden>
+    <div class="console-head">
+      <span id="install-console-title">Установка</span>
+      <button id="install-console-close" hidden>Закрыть</button>
+    </div>
+    <pre id="install-log"></pre>
+  </div>
 
   <div id="system-modal">
     <div class="modal-card">

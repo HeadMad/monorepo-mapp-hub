@@ -20,7 +20,7 @@
   <h1>MappHub</h1>
   <p>Выберите мини-приложение</p>
   <div class="grid">
-    <div class="app-card" onclick="launchApp('sample-game/index.html')">
+    <div class="app-card" onclick="launchApp('com.mapphub.samplegame')">
       <h3>Sample Game</h3><span>HTML5 демо</span>
     </div>
     <div class="app-card" onclick="testRpc()">
@@ -28,8 +28,8 @@
     </div>
   </div>
   <script>
-    function launchApp(url) {
-      MappHub.call("shell.navigate", { url: "miniapps/" + url });
+    function launchApp(appId) {
+      MappHub.call("shell.navigate", { appId });
     }
     function testRpc() {
       MappHub.call("notifications.alert", { title: "Launcher", message: "RPC-мост работает" });

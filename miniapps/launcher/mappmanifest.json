@@ -5,6 +5,5 @@
   "permissions": [
     "device.info",
     "notifications.alert"
-  ],
-  "archiveUrl": "https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/launcher.zip"
+  ]
 }

@@ -32,7 +32,7 @@
       MappHub.call("notifications.alert", { title: "Mini-App", message: "Привет из мини-приложения!" });
     }
     function goBack() {
-      MappHub.call("shell.navigate", { url: "miniapps/launcher/index.html" });
+      MappHub.call("shell.navigate", { appId: "com.mapphub.launcher" });
     }
   </script>
 </body>

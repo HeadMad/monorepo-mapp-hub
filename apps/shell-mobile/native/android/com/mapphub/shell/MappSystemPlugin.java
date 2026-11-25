@@ -9,20 +9,29 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 @CapacitorPlugin(name = "MappSystem")
 public class MappSystemPlugin extends Plugin {
-    private static final Pattern BUNDLED_ASSET_DIR = Pattern.compile("miniapps/[A-Za-z0-9._-]{1,128}");
-    private static final String BUNDLED_ENTRY_POINT = "index.html";
 
     private interface Task {
         JSObject run() throws Exception;
     }
+
+    private static final String ENTRY_POINT = "index.html";
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private MappDatabaseHelper db;
@@ -96,15 +105,25 @@ public class MappSystemPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void installMiniApp(PluginCall call) {
+    public void installMiniAppArchive(PluginCall call) {
         run(call, () -> {
             String appId = requireAppId(call);
             String version = requireString(call, "version");
-            File zip = new File(requireString(call, "zipPath")).getCanonicalFile();
-            if (!isInsideAppStorage(zip)) throw new IllegalArgumentException("zipPath must be inside app storage");
-            packages.installPackage(appId, version, zip);
-            db.upsertRegistry(appId, requireString(call, "name"), version,
-                    call.getString("entryPoint", "index.html"), false, null, call.getString("manifestJson"));
+            String archiveUrl = requireString(call, "archiveUrl");
+            String sha256 = call.getString("sha256");
+            if (!MappPackageManager.isSafeSegment(version)) throw new IllegalArgumentException("invalid version");
+            File zip = new File(getContext().getCacheDir(), appId + "-" + version + ".zip");
+            try {
+                downloadArchive(appId, archiveUrl, zip);
+                if (sha256 != null && !sha256.equalsIgnoreCase(sha256Of(zip))) {
+                    throw new IOException("archive checksum mismatch");
+                }
+                packages.installPackage(appId, version, zip);
+            } finally {
+                zip.delete();
+            }
+            db.upsertRegistry(appId, requireString(call, "name"), version, ENTRY_POINT, false, null,
+                    call.getString("manifestJson"));
             packages.pruneVersions(appId, version);
             JSObject result = new JSObject();
             result.put("activeVersion", version);
@@ -112,22 +131,76 @@ public class MappSystemPlugin extends Plugin {
         });
     }
 
+    private void downloadArchive(String appId, String archiveUrl, File target) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(archiveUrl).openConnection();
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(30000);
+        try {
+            int code = conn.getResponseCode();
+            if (code != HttpURLConnection.HTTP_OK) throw new IOException("HTTP " + code);
+            long total = conn.getContentLengthLong();
+            long received = 0;
+            int lastPercent = -1;
+            try (InputStream in = conn.getInputStream(); OutputStream out = new FileOutputStream(target)) {
+                byte[] buffer = new byte[16384];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                    received += read;
+                    if (total > 0) {
+                        int percent = (int) (received * 100 / total);
+                        if (percent != lastPercent) {
+                            lastPercent = percent;
+                            JSObject event = new JSObject();
+                            event.put("appId", appId);
+                            event.put("percent", percent);
+                            notifyListeners("miniAppInstallProgress", event);
+                        }
+                    }
+                }
+            }
+        } finally {
+            conn.disconnect();
+        }
+    }
+
+    private static String sha256Of(File file) throws IOException {
+        try (InputStream in = new FileInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[16384];
+            int read;
+            while ((read = in.read(buffer)) != -1) digest.update(buffer, 0, read);
+            StringBuilder hex = new StringBuilder();
+            for (byte b : digest.digest()) hex.append(String.format("%02x", b));
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
+        }
+    }
+
     @PluginMethod
-    public void installBundledMiniApp(PluginCall call) {
+    public void fetchMiniAppCatalog(PluginCall call) {
         run(call, () -> {
-            String appId = requireAppId(call);
-            String version = requireString(call, "version");
-            String assetDir = requireString(call, "assetDir");
-            if (!MappPackageManager.isSafeSegment(version)) throw new IllegalArgumentException("invalid version");
-            if (!BUNDLED_ASSET_DIR.matcher(assetDir).matches()) throw new IllegalArgumentException("invalid assetDir");
-            packages.installFromAssets(appId, version, getContext().getAssets(), "public/" + assetDir);
-            db.upsertRegistry(appId, requireString(call, "name"), version, BUNDLED_ENTRY_POINT, false, null,
-                    call.getString("manifestJson"));
-            packages.pruneVersions(appId, version);
-            JSObject result = new JSObject();
-            result.put("activeVersion", version);
-            result.put("entryPoint", BUNDLED_ENTRY_POINT);
-            return result;
+            String url = requireString(call, "url");
+            if (!url.startsWith("https://github.com/")) throw new IllegalArgumentException("catalog url must be on github.com");
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
+            try {
+                int code = conn.getResponseCode();
+                if (code != HttpURLConnection.HTTP_OK) throw new IOException("HTTP " + code);
+                ByteArrayOutputStream body = new ByteArrayOutputStream();
+                try (InputStream in = conn.getInputStream()) {
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    while ((read = in.read(buffer)) != -1) body.write(buffer, 0, read);
+                }
+                JSObject result = new JSObject();
+                result.put("body", body.toString("UTF-8"));
+                return result;
+            } finally {
+                conn.disconnect();
+            }
         });
     }
 

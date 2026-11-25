@@ -6,6 +6,5 @@
     "device.info",
     "notifications.alert",
     "storage.get"
-  ],
-  "archiveUrl": "https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/sample-game.zip"
+  ]
 }
