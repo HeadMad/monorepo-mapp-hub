@@ -21,3 +21,14 @@ To prevent context window bloat and ensure precise task execution, tasks are org
 - **Modular API Actions**: Stored under `apps/shell-mobile/www/js/api/<category>/<action>.js`, dynamically imported on demand.
 - **First-Run Bootstrap & Permissions**: On first launch, the runtime checks for the launcher, loads its manifest, and presents a 2-step permission modal (with warnings if permissions are revoked).
 - **Auto-Update & Beta Channels**: Supports checking `release-manifest.json` for shell updates with progress bars and seamless updates.
+
+---
+
+## Документация
+- Оглавление: [docs/README.md](docs/README.md)
+- Справочник API реализованных экшенов: [docs/api/README.md](docs/api/README.md)
+- Модель разрешений: [docs/permissions.md](docs/permissions.md)
+- Руководство по мини-приложениям и мосту: [docs/miniapp-development.md](docs/miniapp-development.md)
+- Протокол: [docs/rpc-protocol.md](docs/rpc-protocol.md)
+
+При добавлении нового экшена обязательно: создать `docs/api/<category>.<action>.md`, добавить строку в `docs/api/README.md` и `docs/permissions.md`.

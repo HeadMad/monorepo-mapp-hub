@@ -1,37 +1,31 @@
 # RPC-мост и протокол
 
-## Использование в мини-приложении
-Подключить `miniapps/_sdk/mapp-bridge.js` классическим скриптом. Он создает глобальный объект `MappHub`:
-
-```html
-<script src="../_sdk/mapp-bridge.js"></script>
-<script>
-  const res = await MappHub.shell("checkUpdate", { includeBeta: false });
-  if (res.ok) console.log(res.result);
-  else console.error(res.message);
-</script>
-```
-
-- `MappHub.<category>(<action>, <params>)` вызывает экшен `<category>.<action>`.
-- Параметры передаются объектом (по умолчанию `{}`).
-- Возвращается Promise с ответом `{ ok, result }` при успехе или `{ ok: false, message }` при ошибке.
-- Обращение к `MappHub.then` возвращает `undefined`, поэтому объект безопасно `await`-ить без подмены.
+Мост для мини-приложений: [miniapps/_sdk/mapp-bridge.js](../miniapps/_sdk/mapp-bridge.js). Как им пользоваться, см. [руководство](miniapp-development.md). Список экшенов: [api/README.md](api/README.md).
 
 ## Транспорт (JSON-RPC 2.0 поверх postMessage)
-Мост отправляет родителю (оболочке):
+
+Запрос от мини-приложения к оболочке:
 ```json
 { "jsonrpc": "2.0", "method": "category.action", "params": {}, "id": "req_1" }
 ```
-Оболочка отвечает:
+
+Успешный ответ:
 ```json
 { "jsonrpc": "2.0", "result": {}, "id": "req_1" }
 ```
-или
+
+Ошибка:
 ```json
 { "jsonrpc": "2.0", "error": { "code": -32000, "message": "..." }, "id": "req_1" }
 ```
-Мост принимает только сообщения от `window.parent` с известным `id`.
+
+Мост превращает это в `{ ok, result }` или `{ ok: false, message }` и принимает ответы только от `window.parent` с известным `id`.
 
 ## Маршрутизация в оболочке
-- `category.action` переводится в файл `js/api/<category>/<action>.js`, вызывается его default-экспорт `(params, context)`.
-- Встроенные методы: `shell.navigate` (`{ url }`, путь относительно корня `www`), `shell.setTokens` (`{ tokens }`).
+
+- `category.action` переводится в `js/api/<category>/<action>.js`, вызывается default-экспорт `(params, context)`.
+- Встроенные методы: `shell.navigate` (`{ url }`) и `shell.setTokens` (`{ tokens }`), см. [api/shell.navigate.md](api/shell.navigate.md) и [api/shell.setTokens.md](api/shell.setTokens.md).
+- Код `-32601` в ответе означает, что метод или файл экшена не найден.
+- Разрешения проверяются до вызова экшена. Пока это не подключено, см. [permissions.md](permissions.md).
+
+Назад: [документация](README.md)
