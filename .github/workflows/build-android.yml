@@ -61,6 +61,14 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Inject MappHub native layer
+        run: |
+          PKG_DIR=apps/shell-mobile/android/app/src/main/java/com/mapphub/shell
+          ASSET_DIR=apps/shell-mobile/android/app/src/main/assets/mapp_shared
+          mkdir -p "$PKG_DIR" "$ASSET_DIR"
+          cp apps/shell-mobile/native/android/com/mapphub/shell/*.java "$PKG_DIR/"
+          cp miniapps/_sdk/sdk.js "$ASSET_DIR/sdk.js"
+
       - name: Set versionName and stable versionCode
         working-directory: apps/shell-mobile/android/app
         run: |

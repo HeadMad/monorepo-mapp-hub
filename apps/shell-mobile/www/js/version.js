@@ -1,6 +1,6 @@
 // Версия оболочки. Воркфлоу сборки подставляет сюда значение из поля version при ручном запуске,
 // поэтому держи это значение синхронным с release-manifest.json и package.json.
-export const SHELL_VERSION = "0.1.0-beta.2";
+export const SHELL_VERSION = "0.1.0-beta.3";
 
 const PRE_ORDER = { alpha: 0, beta: 1, rc: 2 };
 

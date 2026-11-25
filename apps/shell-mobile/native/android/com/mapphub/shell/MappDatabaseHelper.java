@@ -1,0 +1,160 @@
+package com.mapphub.shell;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public class MappDatabaseHelper extends SQLiteOpenHelper {
+    private static final String DB_NAME = "mapp_system.db";
+    private static final int DB_VERSION = 1;
+    private static MappDatabaseHelper instance;
+
+    private MappDatabaseHelper(Context context) {
+        super(context.getApplicationContext(), DB_NAME, null, DB_VERSION);
+        setWriteAheadLoggingEnabled(true);
+    }
+
+    public static synchronized MappDatabaseHelper getInstance(Context context) {
+        if (instance == null) instance = new MappDatabaseHelper(context);
+        return instance;
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE miniapp_storage ("
+                + "app_id TEXT NOT NULL,"
+                + "key TEXT NOT NULL,"
+                + "value TEXT NOT NULL,"
+                + "size_bytes INTEGER NOT NULL,"
+                + "updated_at INTEGER DEFAULT (strftime('%s', 'now')),"
+                + "PRIMARY KEY (app_id, key)) WITHOUT ROWID");
+        db.execSQL("CREATE TABLE system_registry ("
+                + "app_id TEXT PRIMARY KEY,"
+                + "name TEXT NOT NULL,"
+                + "active_version TEXT NOT NULL,"
+                + "entry_point TEXT DEFAULT 'index.html',"
+                + "is_remote INTEGER DEFAULT 0,"
+                + "remote_url TEXT,"
+                + "manifest_json TEXT,"
+                + "updated_at INTEGER DEFAULT (strftime('%s', 'now'))) WITHOUT ROWID");
+        db.execSQL("CREATE TABLE system_kv ("
+                + "namespace TEXT NOT NULL,"
+                + "key TEXT NOT NULL,"
+                + "value TEXT NOT NULL,"
+                + "updated_at INTEGER DEFAULT (strftime('%s', 'now')),"
+                + "PRIMARY KEY (namespace, key)) WITHOUT ROWID");
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+
+    public void putStorageItem(String appId, String key, String value) {
+        ContentValues cv = new ContentValues();
+        cv.put("app_id", appId);
+        cv.put("key", key);
+        cv.put("value", value);
+        cv.put("size_bytes", value.getBytes(StandardCharsets.UTF_8).length);
+        getWritableDatabase().insertWithOnConflict("miniapp_storage", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public String getStorageItem(String appId, String key) {
+        try (Cursor c = getReadableDatabase().query("miniapp_storage", new String[]{"value"},
+                "app_id = ? AND key = ?", new String[]{appId, key}, null, null, null)) {
+            return c.moveToFirst() ? c.getString(0) : null;
+        }
+    }
+
+    public void removeStorageItem(String appId, String key) {
+        getWritableDatabase().delete("miniapp_storage", "app_id = ? AND key = ?", new String[]{appId, key});
+    }
+
+    public List<String> getStorageKeys(String appId) {
+        List<String> keys = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("miniapp_storage", new String[]{"key"},
+                "app_id = ?", new String[]{appId}, null, null, "key")) {
+            while (c.moveToNext()) keys.add(c.getString(0));
+        }
+        return keys;
+    }
+
+    public void clearStorage(String appId) {
+        getWritableDatabase().delete("miniapp_storage", "app_id = ?", new String[]{appId});
+    }
+
+    public void upsertRegistry(String appId, String name, String activeVersion, String entryPoint,
+                               boolean isRemote, String remoteUrl, String manifestJson) {
+        ContentValues cv = new ContentValues();
+        cv.put("app_id", appId);
+        cv.put("name", name);
+        cv.put("active_version", activeVersion);
+        cv.put("entry_point", entryPoint);
+        cv.put("is_remote", isRemote ? 1 : 0);
+        cv.put("remote_url", remoteUrl);
+        cv.put("manifest_json", manifestJson);
+        getWritableDatabase().insertWithOnConflict("system_registry", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public Map<String, Object> getRegistry(String appId) {
+        try (Cursor c = getReadableDatabase().query("system_registry", null,
+                "app_id = ?", new String[]{appId}, null, null, null)) {
+            return c.moveToFirst() ? registryRow(c) : null;
+        }
+    }
+
+    public List<Map<String, Object>> listRegistry() {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("system_registry", null,
+                null, null, null, null, "app_id")) {
+            while (c.moveToNext()) rows.add(registryRow(c));
+        }
+        return rows;
+    }
+
+    public void deleteMiniApp(String appId) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("miniapp_storage", "app_id = ?", new String[]{appId});
+            db.delete("system_registry", "app_id = ?", new String[]{appId});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    public void putSystem(String namespace, String key, String value) {
+        ContentValues cv = new ContentValues();
+        cv.put("namespace", namespace);
+        cv.put("key", key);
+        cv.put("value", value);
+        getWritableDatabase().insertWithOnConflict("system_kv", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public String getSystem(String namespace, String key) {
+        try (Cursor c = getReadableDatabase().query("system_kv", new String[]{"value"},
+                "namespace = ? AND key = ?", new String[]{namespace, key}, null, null, null)) {
+            return c.moveToFirst() ? c.getString(0) : null;
+        }
+    }
+
+    private static Map<String, Object> registryRow(Cursor c) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("appId", c.getString(c.getColumnIndexOrThrow("app_id")));
+        row.put("name", c.getString(c.getColumnIndexOrThrow("name")));
+        row.put("activeVersion", c.getString(c.getColumnIndexOrThrow("active_version")));
+        row.put("entryPoint", c.getString(c.getColumnIndexOrThrow("entry_point")));
+        row.put("isRemote", c.getInt(c.getColumnIndexOrThrow("is_remote")) == 1);
+        row.put("remoteUrl", c.getString(c.getColumnIndexOrThrow("remote_url")));
+        row.put("manifestJson", c.getString(c.getColumnIndexOrThrow("manifest_json")));
+        return row;
+    }
+}
