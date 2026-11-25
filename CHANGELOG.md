@@ -6,6 +6,13 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Added
 
+- **shell:** debug console, service host, browser mini-app; bump to 0.2.0-beta.5 (adcdb31)
+- **launcher:** desktop shows installed mini-apps via miniapp.list (85ffe00)
+
+## v0.2.0-beta.4 — 2026-11-25
+
+### Added
+
 - **shell:** install mini-apps from release archives after shell install (e902f98)
 
 ## v0.2.0-beta.3 — 2026-11-25
