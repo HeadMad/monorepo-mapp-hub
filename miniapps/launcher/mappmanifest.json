@@ -1,0 +1,7 @@
+{
+  "id": "com.mapphub.launcher",
+  "name": "MappHub Launcher",
+  "version": "1.0.0",
+  "permissions": ["device.info", "notifications.alert"],
+  "archiveUrl": "https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/launcher.zip"
+}
