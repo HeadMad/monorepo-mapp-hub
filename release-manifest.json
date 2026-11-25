@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.1.0-beta.3",
+    "betaVersion": "0.2.0-beta.3",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.3/mapphub-shell-v0.1.0-beta.3.apk",
-    "changelog": "Beta 0.1.0-beta.3: нативный слой MappHub (SQLite mapp_system.db, менеджер пакетов с защитой от Zip Slip, виртуальные домены mapp.local и miniapp-*.local, плагин MappSystem), клиентский sdk.js и мост MappHostBridge."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.3/mapphub-shell-v0.2.0-beta.3.apk",
+    "changelog": "Beta 0.2.0-beta.3: bundled mini-apps are unpacked from APK assets into noBackupFilesDir and registered in system_registry; mini-apps open on https://miniapp-<id>.local/; MappHub.js is served from https://mapp.local; changelog and release notes are in English. Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.2",
-  "versionCode": 20022
+  "version": "0.2.0-beta.3",
+  "versionCode": 20023
 }
