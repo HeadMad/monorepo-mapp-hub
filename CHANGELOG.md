@@ -10,10 +10,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Documentation
 
+- **tasks:** record TASK-016 progress (code done, device check pending) (17462cb)
 - switch changelog generator and release notes to English (2a739ee)
 
 ### Chores
 
+- point beta channel to v0.2.0-beta.3 in release-manifest (78db22b)
 - bump shell to 0.2.0-beta.3 and add release notes (123f981)
 
 ## v0.2.0-beta.2 — 2026-11-25
