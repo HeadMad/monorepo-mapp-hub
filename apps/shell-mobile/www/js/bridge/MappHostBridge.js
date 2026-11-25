@@ -50,17 +50,18 @@ async function onMessage(event) {
   const data = event.data;
   if (!data || data.jsonrpc !== "2.0" || typeof data.method !== "string" || data.id === undefined) return;
 
-  const reply = (body) => event.source.postMessage({ jsonrpc: "2.0", id: data.id, ...body }, event.origin);
   const handler = handlers[data.method];
-  if (!handler) {
-    reply({ error: { message: `Method not found: ${data.method}` } });
-    return;
-  }
+  if (!handler) return;
+  const reply = (body) => event.source.postMessage({ jsonrpc: "2.0", id: data.id, ...body }, event.origin);
   try {
     reply({ result: await handler(data.params || {}, ctx) });
   } catch (err) {
     reply({ error: { message: err && err.message ? err.message : String(err) } });
   }
+}
+
+export function isBridgeMethod(method) {
+  return Object.prototype.hasOwnProperty.call(handlers, method);
 }
 
 export function mountMiniApp(iframe, appId, permissions = []) {

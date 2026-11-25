@@ -13,9 +13,12 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 @CapacitorPlugin(name = "MappSystem")
 public class MappSystemPlugin extends Plugin {
+    private static final Pattern BUNDLED_ASSET_DIR = Pattern.compile("miniapps/[A-Za-z0-9._-]{1,128}");
+    private static final String BUNDLED_ENTRY_POINT = "index.html";
 
     private interface Task {
         JSObject run() throws Exception;
@@ -105,6 +108,25 @@ public class MappSystemPlugin extends Plugin {
             packages.pruneVersions(appId, version);
             JSObject result = new JSObject();
             result.put("activeVersion", version);
+            return result;
+        });
+    }
+
+    @PluginMethod
+    public void installBundledMiniApp(PluginCall call) {
+        run(call, () -> {
+            String appId = requireAppId(call);
+            String version = requireString(call, "version");
+            String assetDir = requireString(call, "assetDir");
+            if (!MappPackageManager.isSafeSegment(version)) throw new IllegalArgumentException("invalid version");
+            if (!BUNDLED_ASSET_DIR.matcher(assetDir).matches()) throw new IllegalArgumentException("invalid assetDir");
+            packages.installFromAssets(appId, version, getContext().getAssets(), "public/" + assetDir);
+            db.upsertRegistry(appId, requireString(call, "name"), version, BUNDLED_ENTRY_POINT, false, null,
+                    call.getString("manifestJson"));
+            packages.pruneVersions(appId, version);
+            JSObject result = new JSObject();
+            result.put("activeVersion", version);
+            result.put("entryPoint", BUNDLED_ENTRY_POINT);
             return result;
         });
     }

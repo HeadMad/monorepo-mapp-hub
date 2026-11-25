@@ -1,11 +1,13 @@
 package com.mapphub.shell;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +40,14 @@ public class MappPackageManager {
     }
 
     public void installPackage(String appId, String version, File zipFile) throws IOException {
+        stage(appId, version, dir -> extract(zipFile, dir));
+    }
+
+    public void installFromAssets(String appId, String version, AssetManager assets, String assetDir) throws IOException {
+        stage(appId, version, dir -> copyAssetTree(assets, assetDir, dir));
+    }
+
+    private void stage(String appId, String version, Extractor extractor) throws IOException {
         if (!isSafeSegment(appId) || !isSafeSegment(version)) {
             throw new IOException("Invalid appId or version");
         }
@@ -47,12 +57,32 @@ public class MappPackageManager {
         deleteRecursively(tempDir);
         if (!tempDir.mkdirs()) throw new IOException("Cannot create " + tempDir);
         try {
-            extract(zipFile, tempDir);
+            extractor.extract(tempDir);
             deleteRecursively(targetDir);
             if (!tempDir.renameTo(targetDir)) throw new IOException("Cannot activate version " + version);
         } catch (IOException | RuntimeException e) {
             deleteRecursively(tempDir);
             throw e;
+        }
+    }
+
+    private interface Extractor {
+        void extract(File dir) throws IOException;
+    }
+
+    private static void copyAssetTree(AssetManager assets, String assetPath, File dest) throws IOException {
+        String[] children = assets.list(assetPath);
+        if (children == null || children.length == 0) {
+            try (InputStream in = assets.open(assetPath); OutputStream out = new FileOutputStream(dest)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+            }
+            return;
+        }
+        if (!dest.isDirectory() && !dest.mkdirs()) throw new IOException("Cannot create " + dest);
+        for (String child : children) {
+            copyAssetTree(assets, assetPath + "/" + child, new File(dest, child));
         }
     }
 

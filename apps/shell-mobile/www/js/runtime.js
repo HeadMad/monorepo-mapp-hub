@@ -1,5 +1,6 @@
 import { SHELL_VERSION } from "./version.js";
 import { getInstalled, saveInstalled } from "./core/store.js";
+import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod } from "./bridge/MappHostBridge.js";
 
 // Разрешение, которое проверяется до вызова экшена. Отсутствие записи = разрешение не требуется.
 const PERMISSION_MAP = {
@@ -13,10 +14,18 @@ const PERMISSION_MAP = {
 
 // Мини-приложения, которые поставляются внутри APK. Первый запуск ставит их через miniapp.install.
 const BUNDLED_APPS = [
-  { appId: "com.mapphub.launcher", entry: "miniapps/launcher/index.html", manifestUrl: "miniapps/launcher/mappmanifest.json", required: true },
-  { appId: "com.mapphub.samplegame", entry: "miniapps/sample-game/index.html", manifestUrl: "miniapps/sample-game/mappmanifest.json", required: false },
+  { appId: "com.mapphub.launcher", assetDir: "miniapps/launcher", manifestUrl: "miniapps/launcher/mappmanifest.json", required: true },
+  { appId: "com.mapphub.samplegame", assetDir: "miniapps/sample-game", manifestUrl: "miniapps/sample-game/mappmanifest.json", required: false },
+  { appId: "com.mapphub.themeeditor", assetDir: "miniapps/theme-editor", manifestUrl: "miniapps/theme-editor/mappmanifest.json", required: false },
 ];
-const BUNDLED_BY_ENTRY = Object.fromEntries(BUNDLED_APPS.map((a) => [a.entry, a]));
+
+function bundledFor(url) {
+  return BUNDLED_APPS.find((a) => url === a.assetDir || url.startsWith(a.assetDir + "/")) || null;
+}
+
+function miniAppUrl(appId, path = "index.html") {
+  return `https://miniapp-${appId}.local/${path}`;
+}
 
 function rpcError(code, message) {
   const e = new Error(message);
@@ -148,26 +157,48 @@ class MappShellRuntime {
       console.error("Bootstrap:", e);
     }
     const launcher = BUNDLED_APPS[0];
-    this.loadMiniApp(launcher.entry, launcher.appId);
+    this.loadMiniApp(miniAppUrl(launcher.appId), launcher.appId);
     this.checkShellUpdateOnStart();
   }
 
-  // Первый запуск: ставим встроенные мини-приложения через тот же экшен miniapp.install.
-  // Без лаунчера дальше не пускаем: окно повторяется, пока он не установлен.
+  // Встроенные мини-приложения копируются из ассетов APK при каждом запуске; без лаунчера дальше не пускаем.
   async bootstrap() {
     for (const app of BUNDLED_APPS) {
-      while (!getInstalled(app.appId)) {
-        const res = await this.runInstall({ manifestUrl: app.manifestUrl })
-          .catch((e) => ({ installed: false, error: e.message }));
-        if (res.installed) break;
-        if (!app.required) break;
-        await this.modal.openModal({
-          title: "Лаунчер не установлен",
-          message: res.error ? `Ошибка: ${res.error}` : "Без лаунчера оболочка не может работать.",
-          buttons: [{ id: "retry", text: "Повторить", primary: true }],
-        }).promise;
+      for (;;) {
+        try {
+          await this.installBundled(app);
+          break;
+        } catch (e) {
+          if (!app.required) break;
+          await this.modal.openModal({
+            title: "Лаунчер не установлен",
+            message: `Ошибка: ${e.message}`,
+            buttons: [{ id: "retry", text: "Повторить", primary: true }],
+          }).promise;
+        }
       }
     }
+  }
+
+  async installBundled(app) {
+    const res = await fetch(app.manifestUrl, { cache: "no-store" });
+    if (!res.ok) throw new Error(`манифест ${app.manifestUrl} недоступен`);
+    const manifest = await res.json();
+    await window.Capacitor.Plugins.MappSystem.installBundledMiniApp({
+      appId: app.appId,
+      assetDir: app.assetDir,
+      version: manifest.version,
+      name: manifest.name,
+      manifestJson: JSON.stringify(manifest),
+    });
+    const prev = getInstalled(app.appId);
+    saveInstalled({
+      id: app.appId,
+      name: manifest.name,
+      version: manifest.version,
+      permissions: prev ? prev.permissions || [] : [],
+      requestedPermissions: manifest.permissions || [],
+    });
   }
 
   async checkShellUpdateOnStart() {
@@ -188,7 +219,12 @@ class MappShellRuntime {
   }
 
   loadMiniApp(url, appId = null) {
+    if (this.currentAppId) unmountMiniApp(this.currentAppId);
     this.currentAppId = appId;
+    if (appId) {
+      const rec = getInstalled(appId);
+      mountMiniApp(this.iframe, appId, rec ? rec.permissions || [] : []);
+    }
     this.iframe.src = url;
   }
 
@@ -196,7 +232,7 @@ class MappShellRuntime {
   async onMessage(event) {
     if (event.source !== this.iframe.contentWindow) return;
     const { jsonrpc, method, params, id } = event.data || {};
-    if (jsonrpc !== "2.0" || !method) return;
+    if (jsonrpc !== "2.0" || !method || isBridgeMethod(method)) return;
     try {
       const result = await this.handleRpc(method, params || {});
       this.reply(event.source, { jsonrpc: "2.0", result, id });
@@ -232,8 +268,13 @@ class MappShellRuntime {
     if (!url || url.startsWith("/") || /^https?:/.test(url) || url.includes("..")) {
       throw rpcError(-32602, "Недопустимый путь: укажите путь относительно www");
     }
-    const bundled = BUNDLED_BY_ENTRY[url];
-    this.loadMiniApp(url, bundled ? bundled.appId : null);
+    const bundled = bundledFor(url);
+    if (bundled) {
+      const path = url.slice(bundled.assetDir.length + 1) || "index.html";
+      this.loadMiniApp(miniAppUrl(bundled.appId, path), bundled.appId);
+    } else {
+      this.loadMiniApp(url, null);
+    }
     return { success: true, appId: bundled ? bundled.appId : null };
   }
 
