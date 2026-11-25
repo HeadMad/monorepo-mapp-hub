@@ -1,5 +1,5 @@
 export default async function(params, context) {
-  const { manifestUrl, manifest } = params;
+  const { manifestUrl, manifest, appId: existingAppId } = params;
   let appManifest = manifest;
   
   if (!appManifest && manifestUrl) {
@@ -13,7 +13,6 @@ export default async function(params, context) {
 
   const permissions = appManifest.permissions || [];
 
-  // Step 1: Permissions Selection Modal
   const getPermissionSelection = () => {
     return new Promise((resolve) => {
       let checkboxesHtml = permissions.length > 0 
@@ -21,12 +20,12 @@ export default async function(params, context) {
         : "<p>No special permissions required.</p>";
 
       context.showModal({
-        title: `Install ${appManifest.name}?`,
-        message: `Version: ${appManifest.version}\n\nRequested Permissions:\n${checkboxesHtml}`,
+        title: `Установка ${appManifest.name}?`,
+        message: `Версия: ${appManifest.version}\n\nЗапрашиваемые разрешения:\n${checkboxesHtml}`,
         type: "custom",
         buttons: [
-          { text: "Cancel", primary: false, callback: () => resolve({ installed: false }) },
-          { text: "Install", primary: true, callback: () => {
+          { text: "Отмена", primary: false, callback: () => resolve({ installed: false }) },
+          { text: "Установить", primary: true, callback: () => {
             const checked = Array.from(document.querySelectorAll(".perm-checkbox:checked")).map(el => el.value);
             resolve({ installed: true, grantedPermissions: checked, allRequested: permissions });
           }}
@@ -35,48 +34,35 @@ export default async function(params, context) {
     });
   };
 
-  let installResult = await getPermissionSelection();
+  const installResult = await getPermissionSelection();
   if (!installResult.installed) return { installed: false };
 
-  // Check if any permissions were unchecked
+  // Если убрали какие-то галочки, спрашиваем
   if (installResult.grantedPermissions.length < installResult.allRequested.length) {
     const confirmProceed = await new Promise((resolve) => {
       context.showModal({
-        title: "Warning: Missing Permissions",
-        message: "You have unchecked some permissions. Some features in this mini-app may not work correctly.",
+        title: "Внимание: нет части разрешений",
+        message: "Вы сняли некоторые галочки. Некоторые функции мини-приложения могут не работать.",
         type: "confirm",
         buttons: [
-          { text: "Back to Permissions", primary: false, callback: () => resolve(false) },
-          { text: "Proceed Anyway", primary: true, callback: () => resolve(true) }
+          { text: "Назад", primary: false, callback: () => resolve(false) },
+          { text: "Продолжить", primary: true, callback: () => resolve(true) }
         ]
       });
     });
 
     if (!confirmProceed) {
-      // Loop back recursively
+      // Повторяем выбор разрешений
       return await installWithPermissions(params, context);
     }
   }
 
-  // Step 2: Download & Install with Progress Bar
-  await context.showModal({
-    title: `Installing ${appManifest.name}`,
-    message: "Downloading archive... 0%",
-    type: "progress",
-    buttons: []
-  });
-
-  // Simulated download progress
-  for (let i = 20; i <= 100; i += 20) {
-    await new Promise(r => setTimeout(r, 300));
-    context.updateModalMessage(`Downloading archive... ${i}%`);
-  }
-
-  localStorage.setItem("installed_app_" + appManifest.id, JSON.stringify({
+  // Сохраняем манифест с фактически выданными разрешениями в permissions
+  const finalManifest = {
     ...appManifest,
-    grantedPermissions: installResult.grantedPermissions
-  }));
+    permissions: installResult.grantedPermissions
+  };
 
-  context.hideModal();
-  return { installed: true, appId: appManifest.id, version: appManifest.version };
+  localStorage.setItem("installed_app_" + finalManifest.id, JSON.stringify(finalManifest));
+  return { installed: true, appId: finalManifest.id, version: finalManifest.version };
 }
