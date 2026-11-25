@@ -10,6 +10,10 @@
 - rename sdk.js to MappHub.js, bump version to v0.2.0-beta.2, update changelog (cb85a4b)
 - **native:** theme storage in system_kv, MappThemeCss validation, mapp.local asset handler with Rhino generators (ddb8094)
 
+### Исправлено
+
+- **native:** declare MappLocalAssetHandler in MappSystemPlugin so the release build compiles (1f9471c)
+
 ### Документация
 
 - finalize changelog for v0.2.0-beta.2 (9068e53)
