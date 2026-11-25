@@ -1,7 +1,11 @@
 {
   "id": "com.mapphub.samplegame",
   "name": "Sample HTML5 Game",
-  "version": "1.0.0",
-  "permissions": ["device.info", "notifications.alert", "storage.get"],
+  "version": "0.1.0-beta.1",
+  "permissions": [
+    "device.info",
+    "notifications.alert",
+    "storage.get"
+  ],
   "archiveUrl": "https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/sample-game.zip"
 }

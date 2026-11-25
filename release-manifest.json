@@ -1,9 +1,9 @@
 {
   "shell": {
-    "version": "1.0.0",
-    "betaVersion": "1.1.0-beta.1",
-    "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v1.0.0/shell-mobile-v1.0.0.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v1.1.0-beta.1/shell-mobile-v1.1.0-beta.1.apk",
-    "changelog": "Initial stable release with dynamic RPC bridge and modular API architecture."
+    "version": "0.1.0-beta.1",
+    "betaVersion": "0.1.0-beta.1",
+    "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.1/app-debug.apk",
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.1/app-debug.apk",
+    "changelog": "Initial pre-alpha beta build 0.1.0-beta.1 with dynamic RPC bridge and modular API architecture."
   }
 }
