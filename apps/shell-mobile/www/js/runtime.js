@@ -137,6 +137,7 @@ class MappShellRuntime {
     this.modal = new ModalEngine();
     this.currentAppId = null;
     window.addEventListener("message", (event) => this.onMessage(event));
+    startMappHostBridge();
     this.start();
   }
 

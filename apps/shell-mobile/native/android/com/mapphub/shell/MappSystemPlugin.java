@@ -128,6 +128,98 @@ public class MappSystemPlugin extends Plugin {
         });
     }
 
+    @PluginMethod
+    public void themeGetList(PluginCall call) {
+        run(call, () -> {
+            JSONArray themes = new JSONArray();
+            for (String id : db.listThemeIds()) {
+                JSONObject theme = new JSONObject();
+                theme.put("id", id);
+                theme.put("builtin", MappDatabaseHelper.isBuiltinTheme(id));
+                themes.put(theme);
+            }
+            JSObject result = new JSObject();
+            result.put("themes", themes);
+            result.put("activeThemeId", db.getActiveThemeId());
+            return result;
+        });
+    }
+
+    @PluginMethod
+    public void themeGetCss(PluginCall call) {
+        run(call, () -> {
+            String css = db.getThemeCss(requireThemeId(call));
+            if (css == null) throw new IllegalArgumentException("unknown theme");
+            JSObject result = new JSObject();
+            result.put("css", css);
+            return result;
+        });
+    }
+
+    @PluginMethod
+    public void themeSave(PluginCall call) {
+        run(call, () -> {
+            String themeId = requireThemeId(call);
+            if (MappDatabaseHelper.isBuiltinTheme(themeId)) throw new IllegalArgumentException("protected theme");
+            db.putThemeCss(themeId, MappThemeCss.canonicalize(requireString(call, "css")));
+            if (themeId.equals(db.getActiveThemeId())) onActiveThemeChanged(themeId);
+            JSObject result = new JSObject();
+            result.put("themeId", themeId);
+            return result;
+        });
+    }
+
+    @PluginMethod
+    public void themeReset(PluginCall call) {
+        run(call, () -> {
+            String themeId = requireThemeId(call);
+            if (!MappDatabaseHelper.isBuiltinTheme(themeId)) throw new IllegalArgumentException("only builtin themes can be reset");
+            String css = MappDatabaseHelper.builtinThemeCss(themeId);
+            db.putThemeCss(themeId, css);
+            if (themeId.equals(db.getActiveThemeId())) onActiveThemeChanged(themeId);
+            JSObject result = new JSObject();
+            result.put("css", css);
+            return result;
+        });
+    }
+
+    @PluginMethod
+    public void themeApply(PluginCall call) {
+        run(call, () -> {
+            String themeId = requireThemeId(call);
+            if (db.getThemeCss(themeId) == null) throw new IllegalArgumentException("unknown theme");
+            db.setActiveThemeId(themeId);
+            onActiveThemeChanged(themeId);
+            JSObject result = new JSObject();
+            result.put("activeThemeId", themeId);
+            return result;
+        });
+    }
+
+    @PluginMethod
+    public void invalidateAssetCache(PluginCall call) {
+        run(call, () -> {
+            String filename = call.getString("filename");
+            if (filename == null) assets.invalidateAllCache();
+            else assets.invalidateCache(filename);
+            return new JSObject();
+        });
+    }
+
+    private void onActiveThemeChanged(String themeId) {
+        assets.invalidateCache("theme.css");
+        JSObject payload = new JSObject();
+        payload.put("themeId", themeId);
+        payload.put("timestamp", System.currentTimeMillis());
+        getActivity().runOnUiThread(() -> notifyListeners("themeChanged", payload));
+    }
+
+    private static String requireThemeId(PluginCall call) {
+        String themeId = requireString(call, "themeId");
+        if (!MappThemeCss.THEME_ID.matcher(themeId).matches()) throw new IllegalArgumentException("invalid themeId");
+        return themeId;
+    }
+
     private void run(PluginCall call, Task task) {
         io.execute(() -> {
             try {

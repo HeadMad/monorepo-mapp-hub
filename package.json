@@ -1,0 +1,8 @@
+{
+  "name": "monorepo-mapp-hub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}

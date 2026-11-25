@@ -53,13 +53,19 @@ jobs:
       - name: Bundle mini-apps into web assets
         run: |
           mkdir -p apps/shell-mobile/www/miniapps
-          cp -r miniapps/launcher miniapps/sample-game miniapps/_sdk apps/shell-mobile/www/miniapps/
+          cp -r miniapps/launcher miniapps/sample-game miniapps/theme-editor miniapps/_sdk apps/shell-mobile/www/miniapps/
+          mkdir -p apps/shell-mobile/www/assets
+          cp miniapps/_sdk/sdk.js apps/shell-mobile/www/assets/sdk.js
 
       - name: Generate Android project
         working-directory: apps/shell-mobile
         run: |
           npx cap add android
           npx cap sync android
+
+      - name: Add Rhino dependency for mapp.local generators
+        working-directory: apps/shell-mobile/android/app
+        run: sed -i 's|^dependencies {|dependencies {\n    implementation "org.mozilla:rhino:1.7.15"|' build.gradle && grep -n "rhino" build.gradle
 
       - name: Inject MappHub native layer
         run: |

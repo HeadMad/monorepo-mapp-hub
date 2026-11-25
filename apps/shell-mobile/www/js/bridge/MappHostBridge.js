@@ -1,39 +1,53 @@
 const PLUGIN_NAME = "MappSystem";
-const THEME_NAMESPACE = "theme";
-const THEME_TOKENS_KEY = "tokens";
+const THEME_READ = "system.theme.read";
+const THEME_WRITE = "system.theme.write";
 
 const frames = new WeakMap();
 const mounted = new Map();
 
 function plugin() {
-  return window.Capacitor.Plugins[PLUGIN_NAME];
+  const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[PLUGIN_NAME];
+  if (!p) throw new Error("MappSystem plugin is not available");
+  return p;
 }
 
 function originFor(appId) {
   return `https://miniapp-${appId}.local`;
 }
 
+function guarded(permission, fn) {
+  return (params, ctx) => {
+    if (!ctx.permissions.has(permission)) throw new Error("permission denied");
+    return fn(params);
+  };
+}
+
 const handlers = {
-  "storage.getItem": (params, appId) =>
-    plugin().storageGetItem({ appId, key: params.key }),
-  "storage.setItem": (params, appId) =>
-    plugin().storageSetItem({ appId, key: params.key, value: params.value }),
-  "storage.removeItem": (params, appId) =>
-    plugin().storageRemoveItem({ appId, key: params.key }),
-  "storage.getKeys": (_params, appId) =>
-    plugin().storageGetKeys({ appId }),
-  "storage.clear": (_params, appId) =>
-    plugin().storageClear({ appId }),
+  "storage.getItem": (params, ctx) =>
+    plugin().storageGetItem({ appId: ctx.appId, key: params.key }),
+  "storage.setItem": (params, ctx) =>
+    plugin().storageSetItem({ appId: ctx.appId, key: params.key, value: params.value }),
+  "storage.removeItem": (params, ctx) =>
+    plugin().storageRemoveItem({ appId: ctx.appId, key: params.key }),
+  "storage.getKeys": (_params, ctx) =>
+    plugin().storageGetKeys({ appId: ctx.appId }),
+  "storage.clear": (_params, ctx) =>
+    plugin().storageClear({ appId: ctx.appId }),
   "ui.getThemeTokens": async () => {
-    const res = await plugin().systemGet({ namespace: THEME_NAMESPACE, key: THEME_TOKENS_KEY });
+    const res = await plugin().systemGet({ namespace: "theme", key: "tokens" });
     return { tokens: res.value ? JSON.parse(res.value) : {} };
   },
+  "theme.getList": guarded(THEME_READ, () => plugin().themeGetList({})),
+  "theme.getCss": guarded(THEME_READ, (p) => plugin().themeGetCss({ themeId: p.themeId })),
+  "theme.save": guarded(THEME_WRITE, (p) => plugin().themeSave({ themeId: p.themeId, css: p.css })),
+  "theme.reset": guarded(THEME_WRITE, (p) => plugin().themeReset({ themeId: p.themeId })),
+  "theme.apply": guarded(THEME_WRITE, (p) => plugin().themeApply({ themeId: p.themeId })),
 };
 
 async function onMessage(event) {
-  const appId = frames.get(event.source);
+  const ctx = frames.get(event.source);
+  if (!ctx || event.origin !== originFor(ctx.appId)) return;
   const data = event.data;
-  if (!appId || event.origin !== originFor(appId)) return;
   if (!data || data.jsonrpc !== "2.0" || typeof data.method !== "string" || data.id === undefined) return;
 
   const reply = (body) => event.source.postMessage({ jsonrpc: "2.0", id: data.id, ...body }, event.origin);
@@ -43,26 +57,30 @@ async function onMessage(event) {
     return;
   }
   try {
-    reply({ result: await handler(data.params || {}, appId) });
+    reply({ result: await handler(data.params || {}, ctx) });
   } catch (err) {
     reply({ error: { message: err && err.message ? err.message : String(err) } });
   }
 }
 
-export function mountMiniApp(iframe, appId) {
-  frames.set(iframe.contentWindow, appId);
-  mounted.set(appId, iframe);
+export function mountMiniApp(iframe, appId, permissions = []) {
+  const ctx = { appId, iframe, permissions: new Set(permissions) };
+  frames.set(iframe.contentWindow, ctx);
+  mounted.set(appId, ctx);
 }
 
 export function unmountMiniApp(appId) {
+  const ctx = mounted.get(appId);
+  if (ctx) frames.delete(ctx.iframe.contentWindow);
   mounted.delete(appId);
 }
 
-export function broadcastThemeChanged(tokens) {
-  for (const [appId, iframe] of mounted) {
+export function broadcastEvent(event, payload) {
+  const timestamp = Date.now();
+  for (const { appId, iframe } of mounted.values()) {
     if (!iframe.contentWindow) continue;
     iframe.contentWindow.postMessage(
-      { jsonrpc: "2.0", method: "event.themeChanged", params: { tokens } },
+      { __mapp_event__: true, event, payload, timestamp },
       originFor(appId)
     );
   }
@@ -70,4 +88,10 @@ export function broadcastThemeChanged(tokens) {
 
 export function startMappHostBridge() {
   window.addEventListener("message", onMessage);
+  const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[PLUGIN_NAME];
+  if (!p) return;
+  p.addListener("themeChanged", (payload) => {
+    broadcastEvent("themeChanged", payload);
+    window.dispatchEvent(new CustomEvent("mapp:event", { detail: { event: "themeChanged", payload } }));
+  });
 }

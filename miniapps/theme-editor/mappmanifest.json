@@ -1,0 +1,10 @@
+{
+  "id": "com.mapphub.themeeditor",
+  "name": "Редактор тем",
+  "version": "0.1.0-beta.4",
+  "permissions": [
+    "system.theme.read",
+    "system.theme.write"
+  ],
+  "archiveUrl": "https://raw.githubusercontent.com/HeadMad/monorepo-mapp-hub/main/miniapps/theme-editor.zip"
+}

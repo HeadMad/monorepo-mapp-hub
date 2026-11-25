@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Редактор тем</title>
+  <link id="mapp-theme-css" rel="stylesheet" href="https://mapp.local/theme.css">
+  <script src="https://mapp.local/sdk.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--mapp-font-family); font-size: var(--mapp-font-size-base);
+      background: var(--mapp-color-bg); color: var(--mapp-color-text); }
+    header, main { padding: 16px; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+    select, input, textarea, button { font: inherit; border-radius: var(--mapp-radius-sm); }
+    select, input, textarea { background: var(--mapp-color-surface); color: var(--mapp-color-text);
+      border: 1px solid var(--mapp-color-border); padding: 6px 8px; }
+    textarea { width: 100%; min-height: 140px; box-sizing: border-box; font-family: monospace; }
+    button { border: none; padding: 8px 12px; cursor: pointer; }
+    button.primary { background: var(--mapp-color-primary); color: var(--mapp-color-primary-text); }
+    button.secondary { background: var(--mapp-color-surface); color: var(--mapp-color-text);
+      border: 1px solid var(--mapp-color-border); }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 12px 0; }
+    .field { display: flex; flex-direction: column; gap: 4px; background: var(--mapp-color-surface);
+      border: 1px solid var(--mapp-color-border); border-radius: var(--mapp-radius-md); padding: 8px; }
+    .field span { color: var(--mapp-color-muted); font-size: 12px; }
+    .field .row { display: flex; gap: 6px; align-items: center; }
+    .status { min-height: 20px; margin: 8px 0; color: var(--mapp-color-muted); }
+    .status.error { color: var(--mapp-color-danger); }
+    .preview { border: 1px dashed var(--mapp-color-border); border-radius: var(--mapp-radius-lg);
+      padding: 16px; background: var(--mapp-color-bg); }
+    .preview .card { background: var(--mapp-color-surface); border-radius: var(--mapp-radius-md);
+      padding: 16px; border: 1px solid var(--mapp-color-border); }
+    .preview .badge { display: inline-block; padding: 2px 8px; border-radius: var(--mapp-radius-sm);
+      background: var(--mapp-color-primary); color: var(--mapp-color-primary-text); font-size: 12px; }
+    .preview .danger { color: var(--mapp-color-danger); }
+    .preview .muted { color: var(--mapp-color-muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Редактор тем</h1>
+    <div class="toolbar">
+      <label>Тема <select id="theme-select"></select></label>
+      <span id="active-label" class="muted"></span>
+    </div>
+    <div class="toolbar">
+      <input id="new-id" placeholder="id новой темы" maxlength="32">
+      <button class="primary" id="btn-save-new">Сохранить как новую</button>
+      <button class="secondary" id="btn-overwrite">Перезаписать</button>
+      <button class="secondary" id="btn-reset">Сбросить к заводским</button>
+      <button class="primary" id="btn-apply-all">Применить ко всем приложениям</button>
+    </div>
+    <div id="status" class="status"></div>
+  </header>
+  <main>
+    <div id="fields" class="fields"></div>
+    <label>Сырой CSS
+      <textarea id="raw" spellcheck="false"></textarea>
+    </label>
+    <h2 style="font-size: 16px;">Предпросмотр (без сохранения)</h2>
+    <div id="preview" class="preview">
+      <div class="card">
+        <h3 style="margin: 0 0 8px;">Карточка</h3>
+        <p class="muted">Текст второстепенный. <span class="danger">Опасное действие.</span></p>
+        <p><input placeholder="Поле ввода"> <button class="primary">Основная</button>
+          <button class="secondary">Вторичная</button> <span class="badge">Бейдж</span></p>
+      </div>
+    </div>
+  </main>
+  <script type="module">
+    import { parseRootVars, buildRootCss, validateValue, isHexColor } from "./tokens.js";
+
+    const el = (id) => document.getElementById(id);
+    const state = { themes: [], activeThemeId: null, currentId: null, vars: [] };
+
+    function showStatus(message, isError = false) {
+      el("status").textContent = message;
+      el("status").className = isError ? "status error" : "status";
+    }
+
+    function currentTheme() {
+      return state.themes.find((t) => t.id === state.currentId);
+    }
+
+    function updateButtons() {
+      const builtin = currentTheme() ? currentTheme().builtin : false;
+      el("btn-overwrite").disabled = !state.currentId || builtin;
+      el("btn-reset").disabled = !state.currentId || !builtin;
+    }
+
+    function renderPreview() {
+      const box = el("preview");
+      box.removeAttribute("style");
+      for (const v of state.vars) {
+        try {
+          box.style.setProperty(v.name, validateValue(v.name, v.value));
+        } catch (err) {
+          continue;
+        }
+      }
+    }
+
+    function syncRaw() {
+      el("raw").value = buildRootCss(state.vars);
+    }
+
+    function changeVar(v, value) {
+      v.value = value;
+      syncRaw();
+      renderPreview();
+    }
+
+    function renderFields() {
+      const container = el("fields");
+      container.innerHTML = "";
+      for (const v of state.vars) {
+        const wrap = document.createElement("label");
+        wrap.className = "field";
+        const title = document.createElement("span");
+        title.textContent = v.name;
+        const row = document.createElement("div");
+        row.className = "row";
+        if (v.group === "color" && isHexColor(v.value)) {
+          const picker = document.createElement("input");
+          picker.type = "color";
+          picker.value = v.value.toLowerCase();
+          picker.addEventListener("input", () => changeVar(v, picker.value));
+          row.append(picker);
+        } else if (v.group === "radius" && /^\d+(\.\d+)?px$/.test(v.value)) {
+          const number = document.createElement("input");
+          number.type = "number";
+          number.min = "0";
+          number.step = "1";
+          number.value = parseFloat(v.value);
+          number.addEventListener("input", () => changeVar(v, `${number.value}px`));
+          row.append(number, document.createTextNode("px"));
+        } else {
+          const text = document.createElement("input");
+          text.type = "text";
+          text.value = v.value;
+          text.addEventListener("input", () => changeVar(v, text.value));
+          row.append(text);
+        }
+        wrap.append(title, row);
+        container.append(wrap);
+      }
+    }
+
+    function setVars(vars) {
+      state.vars = vars;
+      renderFields();
+      syncRaw();
+      renderPreview();
+    }
+
+    async function loadThemes(selectId) {
+      const res = await MappHub.theme.getList();
+      state.themes = res.themes;
+      state.activeThemeId = res.activeThemeId;
+      el("active-label").textContent = `Активна: ${state.activeThemeId}`;
+      el("theme-select").innerHTML = "";
+      for (const t of state.themes) {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.builtin ? `${t.id} (заводская)` : t.id;
+        el("theme-select").append(opt);
+      }
+      await selectTheme(selectId || state.currentId || state.activeThemeId);
+    }
+
+    async function selectTheme(id) {
+      const css = await MappHub.theme.getCss(id);
+      state.currentId = id;
+      el("theme-select").value = id;
+      setVars(parseRootVars(css));
+      updateButtons();
+      showStatus(`Открыта тема ${id}`);
+    }
+
+    function collectCss() {
+      return buildRootCss(state.vars);
+    }
+
+    el("theme-select").addEventListener("change", (e) => selectTheme(e.target.value).catch((err) => showStatus(err.message, true)));
+
+    el("raw").addEventListener("input", () => {
+      try {
+        const vars = parseRootVars(el("raw").value);
+        vars.forEach((v) => validateValue(v.name, v.value));
+        state.vars = vars;
+        renderFields();
+        renderPreview();
+        showStatus("");
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    });
+
+    el("btn-save-new").addEventListener("click", async () => {
+      const id = el("new-id").value.trim();
+      try {
+        await MappHub.theme.save(id, collectCss());
+        await loadThemes(id);
+        showStatus(`Тема ${id} сохранена`);
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    });
+
+    el("btn-overwrite").addEventListener("click", async () => {
+      try {
+        await MappHub.theme.save(state.currentId, collectCss());
+        showStatus(`Тема ${state.currentId} перезаписана`);
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    });
+
+    el("btn-reset").addEventListener("click", async () => {
+      try {
+        await MappHub.theme.reset(state.currentId);
+        await selectTheme(state.currentId);
+        showStatus("Тема сброшена к заводским значениям");
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    });
+
+    el("btn-apply-all").addEventListener("click", async () => {
+      try {
+        await MappHub.theme.apply(state.currentId);
+        state.activeThemeId = state.currentId;
+        el("active-label").textContent = `Активна: ${state.activeThemeId}`;
+        showStatus(`Тема ${state.currentId} применена ко всем приложениям`);
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    });
+
+    MappHub.events.on("themeChanged", (payload) => {
+      el("active-label").textContent = `Активна: ${payload.themeId}`;
+    });
+
+    loadThemes().catch((err) => showStatus(err.message, true));
+  </script>
+</body>
+</html>
