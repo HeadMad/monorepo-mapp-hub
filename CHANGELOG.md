@@ -6,6 +6,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Added
 
+- **shell:** install mini-apps from release archives after shell install (e902f98)
+
+## v0.2.0-beta.3 — 2026-11-25
+
+### Added
+
 - **miniapps:** mount bundled mini-apps on miniapp-<id>.local (TASK-016) (c3bd83d)
 
 ### Documentation
