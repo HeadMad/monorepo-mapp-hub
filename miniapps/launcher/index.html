@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>MappHub Launcher</title>
+  <style>
+    body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 40px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; box-sizing: border-box; }
+    h1 { margin-bottom: 8px; }
+    p { color: #94a3b8; margin-bottom: 30px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; max-width: 400px; }
+    .app-card { background: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; }
+    .app-card:hover { background: #334155; }
+    .app-card h3 { margin: 0 0 8px; font-size: 1.1rem; }
+    .app-card span { font-size: 0.85rem; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <h1>MappHub</h1>
+  <p>Выберите мини-приложение</p>
+  <div class="grid">
+    <div class="app-card" onclick="launchApp('../sample-game/index.html')">
+      <h3>Sample Game</h3><span>HTML5 демо</span>
+    </div>
+    <div class="app-card" onclick="testRpc()">
+      <h3>Test API</h3><span>Проверка RPC</span>
+    </div>
+  </div>
+  <script>
+    function launchApp(url) {
+      window.parent.postMessage({ jsonrpc: "2.0", method: "shell.navigate", params: { url }, id: Date.now() }, "*");
+    }
+    function testRpc() {
+      window.parent.postMessage({ jsonrpc: "2.0", method: "notifications.alert",
+        params: { title: "Launcher", message: "RPC-мост работает" }, id: Date.now() }, "*");
+    }
+  </script>
+</body>
+</html>

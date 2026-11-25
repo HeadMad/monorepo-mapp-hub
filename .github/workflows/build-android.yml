@@ -2,11 +2,25 @@ name: Build Android Shell APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Версия релиза без префикса v'
+        required: true
+        default: '0.1.0-beta.1'
+      prerelease:
+        description: 'Отметить релиз как pre-release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    env:
+      VERSION: ${{ inputs.version }}
+      APK_NAME: mapphub-shell-v${{ inputs.version }}.apk
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,25 +36,55 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install dependencies & Capacitor CLI
-        run: |
-          cd apps/shell-mobile
-          npm install
+      - name: Install Capacitor dependencies
+        working-directory: apps/shell-mobile
+        run: npm install
 
-      - name: Add Android Platform & Build Web Assets
+      - name: Bundle mini-apps into web assets
         run: |
-          cd apps/shell-mobile
-          npx cap add android || true
+          mkdir -p apps/shell-mobile/www/miniapps
+          cp -r miniapps/launcher miniapps/sample-game apps/shell-mobile/www/miniapps/
+
+      - name: Generate Android project
+        working-directory: apps/shell-mobile
+        run: |
+          npx cap add android
           npx cap sync android
 
-      - name: Build Android APK (Debug/Release)
+      - name: Build debug APK
+        working-directory: apps/shell-mobile/android
         run: |
-          cd apps/shell-mobile/android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK Artifact
+      - name: Rename APK
+        run: cp apps/shell-mobile/android/app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mapphub-shell-android-debug
-          path: apps/shell-mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: mapphub-shell-v${{ inputs.version }}
+          path: ${{ env.APK_NAME }}
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "${{ inputs.prerelease }}" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
+          cat > release-notes.md << 'NOTES'
+          Первая сборка оболочки, которую можно пощупать руками. Это бета, так что шероховатости ожидаемы.
+
+          Что внутри:
+          - RPC-мост между оболочкой и мини-приложениями в стиле Telegram Bot API
+          - Динамически подгружаемые API-экшены (device, notifications, storage)
+          - Единое модальное окно для системных уведомлений
+          - Лаунчер и демо-мини-приложение внутри APK
+
+          Пока не готово: установка мини-приложений с чекбоксами разрешений, прогресс-бар, самообновление оболочки.
+          NOTES
+          gh release create "v$VERSION" "$APK_NAME" \
+            --target "$GITHUB_SHA" \
+            --title "MappHub Shell v$VERSION" \
+            --notes-file release-notes.md \
+            $PRERELEASE_FLAG

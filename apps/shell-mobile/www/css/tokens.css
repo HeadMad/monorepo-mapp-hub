@@ -1,0 +1,11 @@
+:root {
+  --app-bg: #0f172a;
+  --app-card-bg: #1e293b;
+  --app-text: #f8fafc;
+  --app-text-muted: #94a3b8;
+  --app-primary: #3b82f6;
+  --app-primary-hover: #2563eb;
+  --app-danger: #ef4444;
+  --app-border: #334155;
+  --app-radius: 12px;
+}
