@@ -55,7 +55,7 @@ jobs:
           mkdir -p apps/shell-mobile/www/miniapps
           cp -r miniapps/launcher miniapps/sample-game miniapps/theme-editor miniapps/_sdk apps/shell-mobile/www/miniapps/
           mkdir -p apps/shell-mobile/www/assets
-          cp miniapps/_sdk/sdk.js apps/shell-mobile/www/assets/sdk.js
+          cp miniapps/_sdk/MappHub.js apps/shell-mobile/www/assets/MappHub.js
 
       - name: Generate Android project
         working-directory: apps/shell-mobile
@@ -73,7 +73,7 @@ jobs:
           ASSET_DIR=apps/shell-mobile/android/app/src/main/assets/mapp_shared
           mkdir -p "$PKG_DIR" "$ASSET_DIR"
           cp apps/shell-mobile/native/android/com/mapphub/shell/*.java "$PKG_DIR/"
-          cp miniapps/_sdk/sdk.js "$ASSET_DIR/sdk.js"
+          cp miniapps/_sdk/MappHub.js "$ASSET_DIR/MappHub.js"
 
       - name: Set versionName and stable versionCode
         working-directory: apps/shell-mobile/android/app

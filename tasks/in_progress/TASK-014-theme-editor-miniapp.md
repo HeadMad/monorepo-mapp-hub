@@ -12,7 +12,7 @@
 - Режим «Сырой CSS»: текстовое поле, синхронизируется с формой.
 - Предпросмотр: карточка с кнопками, инпутами, бейджами, стилизованными через `var(--mapp-*)`. Правки применяются локально на контейнер предпросмотра без сохранения.
 - Действия: «Сохранить как новую» (`MappHub.theme.save`), «Перезаписать» (только кастомные темы), «Сбросить к заводским» (для `light` и `dark`), «Применить ко всем приложениям» (`MappHub.theme.apply`).
-- Подключение: `<link id="mapp-theme-css" href="https://mapp.local/theme.css">` и `<script src="https://mapp.local/sdk.js">`.
+- Подключение: `<link id="mapp-theme-css" href="https://mapp.local/theme.css">` и `<script src="https://mapp.local/MappHub.js">`.
 
 ### Files
 - `miniapps/theme-editor/index.html`

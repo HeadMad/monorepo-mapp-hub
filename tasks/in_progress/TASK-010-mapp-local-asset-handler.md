@@ -20,7 +20,7 @@ Java-перехватчик `shouldInterceptRequest` для хоста `mapp.loc
 - `.github/workflows/build-android.yml` (зависимость `org.mozilla:rhino`)
 
 ### Acceptance criteria
-- `https://mapp.local/sdk.js` отдает файл с `Access-Control-Allow-Origin: *`.
+- `https://mapp.local/MappHub.js` отдает файл с `Access-Control-Allow-Origin: *`.
 - `https://mapp.local/theme.css` возвращает CSS активной темы, при `invalidateCache("theme.css")` содержимое обновляется.
 - `https://mapp.local/missing.css` возвращает 404.
 - Генератор с бесконечным циклом прерывается и отдает 500 без падения приложения.
