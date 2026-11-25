@@ -1,6 +1,6 @@
 {
   "name": "mapphub-shell-mobile",
-  "version": "0.2.0-beta.2",
+  "version": "0.2.0-beta.3",
   "description": "MappHub Mobile Shell (Capacitor)",
   "dependencies": {
     "@capacitor/android": "^7.0.0",
