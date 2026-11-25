@@ -1,7 +1,9 @@
 import { SHELL_VERSION } from "./version.js";
 import { getInstalled, getSettings, saveInstalled } from "./core/store.js";
-import { runBundleInstall, LAUNCHER_ID } from "./installer/bundle.js";
+import { runBundleInstall, LAUNCHER_ID, installCatalogApp } from "./installer/bundle.js";
 import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod } from "./bridge/MappHostBridge.js";
+import { ServiceHost } from "./bridge/services.js";
+import { DebugConsole, formatArgs } from "./console/debugConsole.js";
 
 // Разрешение, которое проверяется до вызова экшена. Отсутствие записи = разрешение не требуется.
 const PERMISSION_MAP = {
@@ -11,6 +13,7 @@ const PERMISSION_MAP = {
   "ui.openExternal": "ui.externalUrl",
   "miniapp.install": "miniapps.install",
   "shell.setTokens": "shell.tokens",
+  "host.setLayout": "shell.host",
 };
 
 function miniAppUrl(appId, path = "index.html") {
@@ -162,9 +165,30 @@ class MappShellRuntime {
     this.iframe = document.getElementById("app-frame");
     this.modal = new ModalEngine();
     this.currentAppId = null;
+    this.debugConsole = new DebugConsole(document.getElementById("debug-console"));
+    this.services = new ServiceHost({
+      host: document.getElementById("svc-host"),
+      urlFor: miniAppUrl,
+      main: () => ({ appId: this.currentAppId, iframe: this.iframe }),
+      ensureInstalled: (appId) => installCatalogApp(appId, this.apiContext(null)),
+    });
+    this.captureShellConsole();
     window.addEventListener("message", (event) => this.onMessage(event));
     startMappHostBridge();
     this.start();
+  }
+
+  captureShellConsole() {
+    for (const level of ["log", "info", "warn", "error", "debug"]) {
+      const original = console[level].bind(console);
+      console[level] = (...args) => {
+        original(...args);
+        this.debugConsole.push("shell", level, formatArgs(args));
+      };
+    }
+    window.addEventListener("error", (e) => this.debugConsole.push("shell", "error", e.message));
+    window.addEventListener("unhandledrejection", (e) =>
+      this.debugConsole.push("shell", "error", formatArgs([e.reason])));
   }
 
   async start() {
@@ -201,7 +225,7 @@ class MappShellRuntime {
   }
 
   loadMiniApp(url, appId = null) {
-    if (this.currentAppId) unmountMiniApp(this.currentAppId);
+    unmountMiniApp(this.iframe);
     this.currentAppId = appId;
     if (appId) {
       const rec = getInstalled(appId);
@@ -212,11 +236,17 @@ class MappShellRuntime {
 
   // Принимаем сообщения только от iframe оболочки.
   async onMessage(event) {
-    if (event.source !== this.iframe.contentWindow) return;
-    const { jsonrpc, method, params, id } = event.data || {};
-    if (jsonrpc !== "2.0" || !method || isBridgeMethod(method)) return;
+    const data = event.data || {};
+    if (data.jsonrpc !== "2.0") return;
+    if (!data.method) {
+      this.services.settle(data, event.source);
+      return;
+    }
+    const { method, params, id } = data;
+    const frame = this.services.frameOf(event.source);
+    if (!frame || isBridgeMethod(method)) return;
     try {
-      const result = await this.handleRpc(method, params || {});
+      const result = await this.handleRpc(method, params || {}, frame.appId);
       this.reply(event.source, { jsonrpc: "2.0", result, id });
     } catch (err) {
       this.reply(event.source, {
@@ -227,9 +257,9 @@ class MappShellRuntime {
     }
   }
 
-  async handleRpc(method, params) {
+  async handleRpc(method, params, appId) {
     const required = PERMISSION_MAP[method] || null;
-    if (required) await this.ensurePermission(required);
+    if (required) await this.ensurePermission(required, appId);
 
     if (method === "shell.navigate") return this.navigate(params);
     if (method === "shell.setTokens") {
@@ -242,7 +272,7 @@ class MappShellRuntime {
       throw rpcError(-32600, "Invalid method format. Use category.action");
     }
     const fn = await this.loadApi(category, action);
-    return fn(params, this.apiContext(this.currentAppId));
+    return fn(params, this.apiContext(appId));
   }
 
   navigate(params) {
@@ -283,6 +313,8 @@ class MappShellRuntime {
       openModal: (opts) => this.modal.openModal(opts),
       showModal: (opts) => this.modal.openModal(opts).promise,
       install: (params) => this.runInstall(params),
+      debugConsole: this.debugConsole,
+      services: this.services,
     };
   }
 
@@ -292,11 +324,11 @@ class MappShellRuntime {
   }
 
   // Проверка разрешения по записи установленного мини-приложения.
-  async ensurePermission(required) {
-    if (!this.currentAppId) {
+  async ensurePermission(required, appId) {
+    if (!appId) {
       throw rpcError(-32001, `Permission denied: ${required} (вызов не из установленного приложения)`);
     }
-    const rec = getInstalled(this.currentAppId);
+    const rec = getInstalled(appId);
     if (!rec) throw rpcError(-32001, "Мини-приложение не установлено");
     const granted = rec.permissions || [];
     if (granted.includes(required)) return;

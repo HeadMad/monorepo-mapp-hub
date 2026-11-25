@@ -1,7 +1,10 @@
 (function () {
   const pending = new Map();
   const listeners = new Map();
+  const exposed = {};
+  const fnRefs = new Map();
   let seq = 0;
+  let fnSeq = 0;
 
   function applyTokens(tokens) {
     const root = document.documentElement;
@@ -57,6 +60,11 @@
     if (event.source !== window.parent) return;
     const data = event.data;
     if (!data || typeof data !== "object") return;
+
+    if (data.__mapp_invoke__ === true) {
+      handleInvoke(data);
+      return;
+    }
 
     if (data.__mapp_event__ === true) {
       if (data.event === "themeChanged") reloadThemeCss();
@@ -132,8 +140,94 @@
     },
   };
 
+  function serialize(value) {
+    if (typeof value === "function") {
+      const ref = `fn_${++fnSeq}_${Math.random().toString(36).slice(2, 8)}`;
+      fnRefs.set(ref, value);
+      return { __mapp_fn__: ref };
+    }
+    if (Array.isArray(value)) return value.map(serialize);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, serialize(v)]));
+    }
+    return value;
+  }
+
+  function revive(value, from) {
+    if (Array.isArray(value)) return value.map((v) => revive(v, from));
+    if (value && typeof value === "object") {
+      if (typeof value.__mapp_fn__ === "string") {
+        const ref = value.__mapp_fn__;
+        return (...args) => invoke(from, "__mapp_fn__", { ref, args });
+      }
+      return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, revive(v, from)]));
+    }
+    return value;
+  }
+
+  function invoke(appId, method, params = {}) {
+    return call("miniapp.invoke", { appId, method, params: serialize(params) });
+  }
+
+  function expose(methods) {
+    Object.assign(exposed, methods);
+  }
+
+  async function handleInvoke({ id, from, method, params }) {
+    const reply = (body) => window.parent.postMessage({ jsonrpc: "2.0", id, ...body }, "*");
+    try {
+      let result;
+      if (method === "__mapp_fn__") {
+        const fn = fnRefs.get(params.ref);
+        if (!fn) throw new Error("Callback is no longer available");
+        result = await fn(...(params.args || []));
+      } else {
+        if (!Object.prototype.hasOwnProperty.call(exposed, method)) {
+          throw new Error(`Method ${method} is not exposed`);
+        }
+        result = await exposed[method](revive(params, from));
+      }
+      reply({ result: result === undefined ? null : result });
+    } catch (err) {
+      reply({ error: { message: err && err.message ? err.message : String(err) } });
+    }
+  }
+
+  function formatArg(value) {
+    if (typeof value === "string") return value;
+    if (value instanceof Error) return value.stack || `${value.name}: ${value.message}`;
+    try {
+      const json = JSON.stringify(value);
+      return json === undefined ? String(value) : json;
+    } catch (e) {
+      return String(value);
+    }
+  }
+
+  function forwardLog(level, args) {
+    if (window.parent === window) return;
+    call("console.write", { level, text: args.map(formatArg).join(" ") }).catch(() => {});
+  }
+
+  for (const level of ["log", "info", "warn", "error", "debug"]) {
+    const original = console[level].bind(console);
+    console[level] = (...args) => {
+      original(...args);
+      forwardLog(level, args);
+    };
+  }
+
+  window.addEventListener("error", (event) => {
+    forwardLog("error", [`${event.message} (${event.filename}:${event.lineno})`]);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    forwardLog("error", [event.reason]);
+  });
+
   window.MappHub = {
     call,
+    invoke,
+    expose,
     storage,
     ui,
     theme,

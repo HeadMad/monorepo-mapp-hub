@@ -22,6 +22,7 @@
 | [device.info](api/device.info.md) | Нативные функции | `device.info` | Реализован, проверка разрешения не подключена |
 | [shell.setTokens](api/shell.setTokens.md) | Затрагивает все приложения | `shell.tokens` (предложено) | Реализован, проверка не подключена |
 | [miniapp.install](api/miniapp.install.md) | Межприложенческий доступ | `miniapps.install` (предложено) | Реализован частично |
+| [host.setLayout](api/host.setLayout.md) | Служебный iframe | `shell.host` | Реализован |
 
 Открытые вопросы, которые нужно подтвердить:
 - `device.info` отнесен к нативным функциям. Это спорно: он отдает только user agent и размер экрана. Можно перевести в песочницу.

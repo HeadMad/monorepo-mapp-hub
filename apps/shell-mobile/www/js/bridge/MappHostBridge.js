@@ -11,7 +11,7 @@ function plugin() {
   return p;
 }
 
-function originFor(appId) {
+export function originFor(appId) {
   return `https://miniapp-${appId}.local`;
 }
 
@@ -67,13 +67,13 @@ export function isBridgeMethod(method) {
 export function mountMiniApp(iframe, appId, permissions = []) {
   const ctx = { appId, iframe, permissions: new Set(permissions) };
   frames.set(iframe.contentWindow, ctx);
-  mounted.set(appId, ctx);
+  mounted.set(iframe, ctx);
 }
 
-export function unmountMiniApp(appId) {
-  const ctx = mounted.get(appId);
+export function unmountMiniApp(iframe) {
+  const ctx = mounted.get(iframe);
   if (ctx) frames.delete(ctx.iframe.contentWindow);
-  mounted.delete(appId);
+  mounted.delete(iframe);
 }
 
 export function broadcastEvent(event, payload) {

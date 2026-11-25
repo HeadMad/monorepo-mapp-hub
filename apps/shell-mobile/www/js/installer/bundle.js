@@ -89,6 +89,20 @@ async function fetchCatalog() {
   return apps.map((app) => ({ ...app, archiveUrl: new URL(app.archive, CATALOG_URL).href }));
 }
 
+export async function installCatalogApp(appId, context) {
+  const catalog = await fetchCatalog();
+  const app = catalog.find((item) => item.id === appId);
+  if (!app) throw new Error(`${appId} нет в каталоге v${SHELL_VERSION}`);
+  const choice = await context.showModal({
+    title: "Приложение не установлено",
+    message: `Для работы нужно приложение «${app.name}» ${app.version}. Установить?`,
+    buttons: [{ id: "cancel", text: "Отмена" }, { id: "install", text: "Установить", primary: true }],
+  });
+  if (choice.action !== "install") throw new Error(`«${app.name}» не установлено`);
+  const res = await installMiniApp({ manifest: app, archiveUrl: app.archiveUrl, sha256: app.sha256 }, context);
+  if (!res.installed) throw new Error(`«${app.name}» не установлено`);
+}
+
 function getConsole() {
   if (!consoleUi) consoleUi = new InstallConsole();
   return consoleUi;

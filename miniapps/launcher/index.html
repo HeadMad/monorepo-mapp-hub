@@ -8,7 +8,14 @@
   <style>
     html, body { height: 100%; margin: 0; }
     body { background: #0f172a; color: #f8fafc; font-family: sans-serif; padding: 24px 16px; box-sizing: border-box; display: flex; flex-direction: column; }
-    h1 { margin: 0 0 4px; font-size: 1.4rem; }
+    header { display: flex; align-items: center; justify-content: space-between; position: relative; margin: 0 0 4px; }
+    h1 { margin: 0; font-size: 1.4rem; }
+    #gear { background: none; border: none; color: #94a3b8; font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+    #gear:active { background: rgba(255, 255, 255, 0.08); }
+    #settings-menu { position: absolute; top: 100%; right: 0; min-width: 220px; padding: 4px; box-sizing: border-box; background: #1e293b; border: 1px solid #334155; border-radius: 10px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); z-index: 5; }
+    #settings-menu[hidden] { display: none; }
+    .menu-item { display: block; width: 100%; padding: 12px; border: none; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    .menu-item:active { background: rgba(255, 255, 255, 0.08); }
     #status { color: #94a3b8; font-size: 0.9rem; margin: 0 0 20px; min-height: 1.2em; }
     #status.error { color: #f87171; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 20px 12px; }
@@ -20,13 +27,22 @@
   </style>
 </head>
 <body>
-  <h1>MappHub</h1>
+  <header>
+    <h1>MappHub</h1>
+    <button id="gear" aria-label="Настройки">⚙</button>
+    <div id="settings-menu" hidden>
+      <button id="menu-console" class="menu-item">Показать консоль</button>
+    </div>
+  </header>
   <p id="status">Загрузка приложений...</p>
   <div id="grid" class="grid"></div>
   <script>
     const LAUNCHER_ID = "com.mapphub.launcher";
     const statusEl = document.getElementById("status");
     const gridEl = document.getElementById("grid");
+    const gearEl = document.getElementById("gear");
+    const settingsEl = document.getElementById("settings-menu");
+    const consoleItemEl = document.getElementById("menu-console");
 
     function setStatus(text, isError) {
       statusEl.textContent = text;
@@ -78,13 +94,41 @@
       }
       try {
         const { apps } = await MappHub.call("miniapp.list");
-        const visible = apps.filter((app) => app.id !== LAUNCHER_ID);
+        const visible = apps.filter((app) => app.id !== LAUNCHER_ID && !app.service);
         gridEl.replaceChildren(...visible.map(tileFor));
         setStatus(visible.length ? "" : "Нет установленных приложений");
       } catch (err) {
         setStatus(`Не удалось загрузить список: ${err.message}`, true);
       }
     }
+
+    async function refreshConsoleItem() {
+      const { visible } = await MappHub.call("console.getState");
+      consoleItemEl.textContent = visible ? "Скрыть консоль" : "Показать консоль";
+      consoleItemEl.dataset.visible = visible ? "1" : "0";
+    }
+
+    gearEl.onclick = (e) => {
+      e.stopPropagation();
+      settingsEl.hidden = !settingsEl.hidden;
+      if (!settingsEl.hidden) {
+        refreshConsoleItem().catch((err) => setStatus(`Не удалось прочитать консоль: ${err.message}`, true));
+      }
+    };
+
+    document.addEventListener("click", (e) => {
+      if (!settingsEl.contains(e.target)) settingsEl.hidden = true;
+    });
+
+    consoleItemEl.onclick = async () => {
+      settingsEl.hidden = true;
+      const visible = consoleItemEl.dataset.visible === "1";
+      try {
+        await MappHub.call("console.setVisible", { visible: !visible });
+      } catch (err) {
+        setStatus(`Не удалось переключить консоль: ${err.message}`, true);
+      }
+    };
 
     loadApps();
   </script>

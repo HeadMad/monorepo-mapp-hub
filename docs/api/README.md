@@ -20,5 +20,11 @@ const res = await MappHub.<category>("<action>", { ...params });
 | `shell.setTokens` | Обновление CSS-токенов оболочки | `shell.tokens` (предложено) | [shell.setTokens](shell.setTokens.md) |
 | `shell.checkUpdate` | Проверка обновления оболочки | не нужно | [shell.checkUpdate](shell.checkUpdate.md) |
 | `miniapp.install` | Установка мини-приложения с разрешениями | `miniapps.install` (предложено) | [miniapp.install](miniapp.install.md) |
+| `miniapp.list` | Установленные мини-приложения из реестра | не нужно | [miniapp.list](miniapp.list.md) |
+| `miniapp.invoke` | Вызов экспонированного метода другого мини-приложения | не нужно | [miniapp.invoke](miniapp.invoke.md) |
+| `host.setLayout` | Скрыть, поверх экрана или прижать служебный iframe | `shell.host` | [host.setLayout](host.setLayout.md) |
+| `console.setVisible` | Показать или скрыть консоль оболочки | не нужно | [console.setVisible](console.setVisible.md) |
+| `console.getState` | Состояние консоли оболочки | не нужно | [console.getState](console.getState.md) |
+| `console.write` | Запись строки в консоль оболочки | не нужно | [console.write](console.write.md) |
 
 Модели разрешений: [../permissions.md](../permissions.md). Протокол: [../rpc-protocol.md](../rpc-protocol.md).

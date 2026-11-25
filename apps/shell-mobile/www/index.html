@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MappHub</title>
   <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/shell-ui.css">
   <style>
     html, body { height: 100%; margin: 0; padding: 0; background: var(--app-bg); color: var(--app-text); }
     body { display: flex; flex-direction: column; overflow: hidden; }
@@ -47,6 +48,19 @@
   <div id="install-bar" hidden>
     <div id="install-bar-fill"></div>
     <span id="install-bar-text"></span>
+  </div>
+
+  <div id="svc-host" class="svc-hidden"></div>
+
+  <div id="debug-console" hidden>
+    <div id="dbg-head">
+      <span id="dbg-count"></span>
+      <span class="dbg-actions">
+        <button id="dbg-copy" type="button">Копировать</button>
+        <button id="dbg-clear" type="button">Очистить</button>
+      </span>
+    </div>
+    <div id="dbg-list"></div>
   </div>
 
   <div id="install-console" hidden>

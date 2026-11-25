@@ -105,6 +105,7 @@ export function packMiniApps({ root = ROOT, outDir = OUT_DIR } = {}) {
       version: manifest.version,
       permissions: manifest.permissions || [],
       ...(manifest.icon ? { icon: manifest.icon } : {}),
+      ...(manifest.service ? { service: true } : {}),
       archive,
       size: zip.length,
       sha256: createHash("sha256").update(zip).digest("hex"),

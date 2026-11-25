@@ -9,6 +9,7 @@ export default async function () {
         name: row.name,
         version: row.activeVersion,
         icon: manifest.icon || null,
+        service: manifest.service === true,
       };
     }),
   };
