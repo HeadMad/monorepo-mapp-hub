@@ -4,6 +4,10 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Added
+
+- **shell:** open mini-apps inside browser window via host.relay (bdf446b)
+
 ### Documentation
 
 - **api:** design shared event bus and console-as-miniapp tasks (eaade2a)
