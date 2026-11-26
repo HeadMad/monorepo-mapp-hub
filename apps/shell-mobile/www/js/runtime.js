@@ -1,7 +1,17 @@
 import { SHELL_VERSION } from "./version.js";
 import { getInstalled, getSettings, saveInstalled } from "./core/store.js";
 import { runBundleInstall, LAUNCHER_ID, installCatalogApp } from "./installer/bundle.js";
-import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod, invokeBridgeMethod, originFor } from "./bridge/MappHostBridge.js";
+import {
+  startMappHostBridge,
+  mountMiniApp,
+  unmountMiniApp,
+  isBridgeMethod,
+  invokeBridgeMethod,
+  attachBus,
+  deliverToApp,
+  mountRelayed,
+  unmountRelayed,
+} from "./bridge/MappHostBridge.js";
 import { ServiceHost } from "./bridge/services.js";
 import { MessageBus, CONSOLE_ID } from "./bridge/bus.js";
 import { formatArgs } from "./core/formatArgs.js";
@@ -18,6 +28,10 @@ const PERMISSION_MAP = {
 };
 
 const BROWSER_ID = "com.mapphub.browser";
+const SHELL_ID = "shell";
+const CONSOLE_TOGGLE = "shell.console.toggle";
+const CONSOLE_DOCK_HEIGHT = 240;
+const LOG_MAX_CHARS = 8000;
 
 function miniAppUrl(appId, path = "index.html") {
   return `https://miniapp-${appId}.local/${path}`;
@@ -171,6 +185,8 @@ class MappShellRuntime {
     this.hostedAppId = null;
     this.consoleVisible = false;
     this.bus = new MessageBus((sub, message) => this.deliverBus(sub, message));
+    attachBus(this.bus);
+    this.bus.subscribe({ appId: SHELL_ID, iframe: null }, { type: CONSOLE_TOGGLE });
     this.services = new ServiceHost({
       host: document.getElementById("svc-host"),
       urlFor: miniAppUrl,
@@ -203,24 +219,22 @@ class MappShellRuntime {
   }
 
   deliverBus(sub, message) {
-    const win = sub.target.iframe.contentWindow;
-    if (!win) return false;
-    win.postMessage(
-      { __mapp_event__: true, event: "bus.message", payload: { subId: sub.subId, message } },
-      originFor(sub.appId),
-    );
-    return true;
+    if (sub.appId === SHELL_ID) {
+      this.toggleConsole().catch((err) => console.error(err.message));
+      return true;
+    }
+    return deliverToApp(sub.appId, "bus.message", { subId: sub.subId, message });
   }
 
-  async setConsoleVisible(visible) {
-    if (visible) {
-      await this.services.targetFrame(CONSOLE_ID);
-      this.services.setLayout("dock", CONSOLE_DOCK_HEIGHT);
-    } else {
+  async toggleConsole() {
+    if (this.consoleVisible) {
       this.services.setLayout("hidden");
+      this.consoleVisible = false;
+      return;
     }
-    this.consoleVisible = visible;
-    return { visible };
+    await this.services.targetFrame(CONSOLE_ID);
+    this.services.setLayout("dock", CONSOLE_DOCK_HEIGHT);
+    this.consoleVisible = true;
   }
 
   async start() {
@@ -293,6 +307,7 @@ class MappShellRuntime {
   async handleRpc(method, params, appId, iframe = null) {
     const required = PERMISSION_MAP[method] || null;
     if (required) await this.ensurePermission(required, appId);
+    if (method === "miniapp.install") params = { ...params, silent: false };
 
     if (method === "shell.navigate") return this.navigate(params);
     if (method === "host.relay") return this.relay(params, appId);
@@ -310,6 +325,7 @@ class MappShellRuntime {
   }
 
   async navigate(params) {
+    if (this.hostedAppId) unmountRelayed(this.hostedAppId);
     if (params.appId) {
       const rec = getInstalled(params.appId);
       if (!rec) throw rpcError(-32004, "Мини-приложение не установлено");
@@ -321,6 +337,7 @@ class MappShellRuntime {
         method: "browser.open",
         params: { appId: params.appId, title: rec.name },
       });
+      mountRelayed(this.services.frames.get(BROWSER_ID), BROWSER_ID, params.appId);
       return { success: true, appId: params.appId };
     }
     const url = String(params.url || "");
@@ -374,12 +391,7 @@ class MappShellRuntime {
       openModal: (opts) => this.modal.openModal(opts),
       showModal: (opts) => this.modal.openModal(opts).promise,
       install: (params) => this.runInstall(params),
-      bus: this.bus,
       services: this.services,
-      console: {
-        getState: () => ({ visible: this.consoleVisible }),
-        setVisible: (visible) => this.setConsoleVisible(visible),
-      },
     };
   }
 

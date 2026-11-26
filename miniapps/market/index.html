@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Маркет</title>
+  <script src="https://mapp.local/MappHub.js"></script>
+  <style>
+    html, body { margin: 0; min-height: 100%; background: #0f172a; color: #f8fafc; font-family: sans-serif; }
+    body { padding: 20px 16px; box-sizing: border-box; }
+    h1 { margin: 0 0 4px; font-size: 1.4rem; }
+    #status { color: #94a3b8; font-size: 0.9rem; min-height: 1.2em; margin: 0 0 16px; }
+    #status.error { color: #f87171; }
+    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    li { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    .info { flex: 1; min-width: 0; }
+    .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta { color: #94a3b8; font-size: 0.8rem; }
+    button { flex: none; padding: 8px 14px; border: none; border-radius: 8px; background: #2563eb; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    button:disabled { background: #475569; cursor: default; }
+  </style>
+</head>
+<body>
+  <h1>Маркет</h1>
+  <p id="status">Загрузка каталога...</p>
+  <ul id="list"></ul>
+  <script>
+    const CATALOG_URL = "https://headmad.github.io/monorepo-mapp-hub/index.json";
+    const statusEl = document.getElementById("status");
+    const listEl = document.getElementById("list");
+
+    function setStatus(text, isError) {
+      statusEl.textContent = text;
+      statusEl.className = isError ? "error" : "";
+    }
+
+    async function loadCatalog() {
+      const res = await fetch(CATALOG_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`каталог недоступен (HTTP ${res.status})`);
+      const { apps } = await res.json();
+      return apps
+        .filter((app) => !app.service)
+        .map((app) => ({ ...app, archiveUrl: new URL(app.archive, CATALOG_URL).href }));
+    }
+
+    async function loadInstalled() {
+      const { apps } = await MappHub.call("miniapp.list");
+      return new Map(apps.map((app) => [app.id, app]));
+    }
+
+    function rowFor(app, installed) {
+      const row = document.createElement("li");
+      const info = document.createElement("div");
+      info.className = "info";
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = app.name;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const current = installed.get(app.id);
+      meta.textContent = current ? `${app.version} · установлено ${current.version}` : `${app.version}`;
+      info.append(name, meta);
+
+      const button = document.createElement("button");
+      button.textContent = current ? (current.version === app.version ? "Установлено" : "Обновить") : "Установить";
+      button.disabled = !!current && current.version === app.version;
+      button.onclick = () => install(app, button);
+      row.append(info, button);
+      return row;
+    }
+
+    async function install(app, button) {
+      button.disabled = true;
+      button.textContent = "Установка...";
+      try {
+        const res = await MappHub.call("miniapp.install", {
+          manifest: app,
+          archiveUrl: app.archiveUrl,
+          sha256: app.sha256,
+        });
+        if (!res.installed) throw new Error("установка отменена");
+        button.textContent = "Установлено";
+        setStatus(`«${app.name}» установлено`);
+      } catch (err) {
+        button.disabled = false;
+        button.textContent = "Установить";
+        setStatus(`Не удалось установить «${app.name}»: ${err.message}`, true);
+      }
+    }
+
+    async function init() {
+      if (typeof MappHub === "undefined") {
+        setStatus("MappHub SDK недоступен", true);
+        return;
+      }
+      try {
+        const [catalog, installed] = await Promise.all([loadCatalog(), loadInstalled()]);
+        listEl.replaceChildren(...catalog.map((app) => rowFor(app, installed)));
+        setStatus(catalog.length ? "" : "В каталоге пока нет приложений");
+      } catch (err) {
+        setStatus(`Не удалось загрузить каталог: ${err.message}`, true);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

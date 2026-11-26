@@ -280,6 +280,12 @@
       }
 
       window.addEventListener("message", (event) => {
+        if (event.source === window.parent && event.data && event.data.__mapp_relay__) {
+          if (hostedAppId && event.data.appId === hostedAppId && page.contentWindow) {
+            page.contentWindow.postMessage(event.data.message, `https://miniapp-${hostedAppId}.local`);
+          }
+          return;
+        }
         if (!hostedAppId || event.source !== page.contentWindow) return;
         if (event.origin !== `https://miniapp-${hostedAppId}.local`) return;
         const msg = event.data;

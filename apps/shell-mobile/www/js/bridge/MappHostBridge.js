@@ -4,6 +4,12 @@ const THEME_WRITE = "system.theme.write";
 
 const frames = new WeakMap();
 const mounted = new Map();
+const relays = new Map();
+let bus = null;
+
+export function attachBus(messageBus) {
+  bus = messageBus;
+}
 
 function plugin() {
   const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[PLUGIN_NAME];
@@ -42,6 +48,10 @@ const handlers = {
   "theme.save": guarded(THEME_WRITE, (p) => plugin().themeSave({ themeId: p.themeId, css: p.css })),
   "theme.reset": guarded(THEME_WRITE, (p) => plugin().themeReset({ themeId: p.themeId })),
   "theme.apply": guarded(THEME_WRITE, (p) => plugin().themeApply({ themeId: p.themeId })),
+  "bus.publish": (params, ctx) => bus.publish(ctx.appId, params),
+  "bus.subscribe": (params, ctx) =>
+    bus.subscribe({ appId: ctx.appId, iframe: ctx.iframe || null }, params.filter, { replay: !!params.replay }),
+  "bus.unsubscribe": (params, ctx) => ({ ok: bus.unsubscribe(params.subId, ctx.appId) }),
 };
 
 async function onMessage(event) {
@@ -80,15 +90,32 @@ export function unmountMiniApp(iframe) {
   mounted.delete(iframe);
 }
 
-export function broadcastEvent(event, payload) {
-  const timestamp = Date.now();
-  for (const { appId, iframe } of mounted.values()) {
-    if (!iframe.contentWindow) continue;
-    iframe.contentWindow.postMessage(
-      { __mapp_event__: true, event, payload, timestamp },
-      originFor(appId)
-    );
+export function mountRelayed(hostIframe, hostAppId, appId) {
+  relays.set(appId, { iframe: hostIframe, origin: originFor(hostAppId) });
+}
+
+export function unmountRelayed(appId) {
+  relays.delete(appId);
+}
+
+export function deliverToApp(appId, event, payload) {
+  const message = { __mapp_event__: true, event, payload, timestamp: Date.now() };
+  for (const [iframe, ctx] of mounted) {
+    if (ctx.appId !== appId) continue;
+    if (!iframe.contentWindow) return false;
+    iframe.contentWindow.postMessage(message, originFor(appId));
+    return true;
   }
+  const relay = relays.get(appId);
+  if (!relay || !relay.iframe.contentWindow) return false;
+  relay.iframe.contentWindow.postMessage({ __mapp_relay__: true, appId, message }, relay.origin);
+  return true;
+}
+
+export function broadcastEvent(event, payload) {
+  const appIds = new Set([...mounted.values()].map((ctx) => ctx.appId));
+  for (const appId of relays.keys()) appIds.add(appId);
+  for (const appId of appIds) deliverToApp(appId, event, payload);
 }
 
 export function startMappHostBridge() {

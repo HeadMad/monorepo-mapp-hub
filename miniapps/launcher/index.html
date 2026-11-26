@@ -31,7 +31,7 @@
     <h1>MappHub</h1>
     <button id="gear" aria-label="Настройки">⚙</button>
     <div id="settings-menu" hidden>
-      <button id="menu-console" class="menu-item">Показать консоль</button>
+      <button id="menu-console" class="menu-item">Консоль</button>
     </div>
   </header>
   <p id="status">Загрузка приложений...</p>
@@ -51,7 +51,7 @@
 
     function colorFor(id) {
       let hash = 0;
-      for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0) ch.charCodeAt(0)) >>> 0;
       return `hsl(${hash % 360} 55% 42%)`;
     }
 
@@ -102,32 +102,20 @@
       }
     }
 
-    async function refreshConsoleItem() {
-      const { visible } = await MappHub.call("console.getState");
-      consoleItemEl.textContent = visible ? "Скрыть консоль" : "Показать консоль";
-      consoleItemEl.dataset.visible = visible ? "1" : "0";
-    }
-
     gearEl.onclick = (e) => {
       e.stopPropagation();
       settingsEl.hidden = !settingsEl.hidden;
-      if (!settingsEl.hidden) {
-        refreshConsoleItem().catch((err) => setStatus(`Не удалось прочитать консоль: ${err.message}`, true));
-      }
     };
 
     document.addEventListener("click", (e) => {
       if (!settingsEl.contains(e.target)) settingsEl.hidden = true;
     });
 
-    consoleItemEl.onclick = async () => {
+    consoleItemEl.onclick = () => {
       settingsEl.hidden = true;
-      const visible = consoleItemEl.dataset.visible === "1";
-      try {
-        await MappHub.call("console.setVisible", { visible: !visible });
-      } catch (err) {
+      MappHub.bus.publish("shell.console.toggle").catch((err) => {
         setStatus(`Не удалось переключить консоль: ${err.message}`, true);
-      }
+      });
     };
 
     loadApps();

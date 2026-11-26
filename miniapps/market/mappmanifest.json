@@ -1,0 +1,8 @@
+{
+  "id": "com.mapphub.market",
+  "name": "Маркет",
+  "version": "0.1.0-beta.1",
+  "permissions": [
+    "miniapps.install"
+  ]
+}
