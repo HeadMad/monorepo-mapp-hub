@@ -1,0 +1,76 @@
+{
+  "apps": [
+    {
+      "id": "com.mapphub.browser",
+      "name": "Браузер",
+      "version": "0.1.0-beta.2",
+      "permissions": [
+        "shell.host"
+      ],
+      "icon": "icon.svg",
+      "service": true,
+      "archive": "browser.zip",
+      "size": 4538,
+      "sha256": "2294ec756e39618bf9365cf2a00d80bb639b21ec2f78216d85af82f1528afeec"
+    },
+    {
+      "id": "com.mapphub.console",
+      "name": "Консоль",
+      "version": "0.1.0-beta.1",
+      "permissions": [],
+      "icon": "icon.svg",
+      "service": true,
+      "archive": "console.zip",
+      "size": 3011,
+      "sha256": "58c8f24f18fae2f49a057c2b738e699f1eb30d76c00d668fa05867f950b3fb2b"
+    },
+    {
+      "id": "com.mapphub.launcher",
+      "name": "MappHub Launcher",
+      "version": "0.1.0-beta.4",
+      "permissions": [
+        "device.info",
+        "notifications.alert"
+      ],
+      "archive": "launcher.zip",
+      "size": 2557,
+      "sha256": "0383c4a032bdda2e76251ab8e13ae860184d6b08117e17b3c2da187fdae8ed75"
+    },
+    {
+      "id": "com.mapphub.market",
+      "name": "Маркет",
+      "version": "0.1.0-beta.1",
+      "permissions": [
+        "miniapps.install"
+      ],
+      "archive": "market.zip",
+      "size": 2129,
+      "sha256": "26219c62859f692e94688052dc858b41a21cf56885a2a731709bd5d30b3021ca"
+    },
+    {
+      "id": "com.mapphub.samplegame",
+      "name": "Sample HTML5 Game",
+      "version": "0.1.0-beta.2",
+      "permissions": [
+        "device.info",
+        "notifications.alert",
+        "storage.get"
+      ],
+      "archive": "sample-game.zip",
+      "size": 1289,
+      "sha256": "af9c4c215dae0a35b9935bd354b16906b82cd31f1b7ef5ad6c9cb9aa150462c8"
+    },
+    {
+      "id": "com.mapphub.themeeditor",
+      "name": "Редактор тем",
+      "version": "0.1.0-beta.4",
+      "permissions": [
+        "system.theme.read",
+        "system.theme.write"
+      ],
+      "archive": "theme-editor.zip",
+      "size": 4095,
+      "sha256": "8645e34dbee82c36086af4be178045d9877d237a1fe544a3b421018712386179"
+    }
+  ]
+}
