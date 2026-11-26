@@ -51,7 +51,7 @@
 
     function colorFor(id) {
       let hash = 0;
-      for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0) ch.charCodeAt(0)) >>> 0;
+      for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
       return `hsl(${hash % 360} 55% 42%)`;
     }
 
