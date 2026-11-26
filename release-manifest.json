@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.2.0-beta.6",
+    "betaVersion": "0.2.0-beta.7",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.6/mapphub-shell-v0.2.0-beta.6.apk",
-    "changelog": "Beta 0.2.0-beta.6: shared event bus (MappHub.bus publish/subscribe/unsubscribe); debug console moved to the com.mapphub.console service mini-app; console.* messages go through the bus. Mini-apps opened from the launcher run inside the browser window. Not yet verified on a physical device."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.7/mapphub-shell-v0.2.0-beta.7.apk",
+    "changelog": "Beta 0.2.0-beta.7: silent mini-app install over RPC/relay is blocked (permission dialog cannot be skipped); bus wired into the host bridge and the browser relay; console toggled via the bus (shell.console.toggle); legacy console.* RPC API removed; new Market mini-app (catalog from GitHub Pages). Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.6",
-  "versionCode": 20026
+  "version": "0.2.0-beta.7",
+  "versionCode": 20027
 }
