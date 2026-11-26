@@ -27,4 +27,8 @@ const res = await MappHub.<category>("<action>", { ...params });
 | `console.getState` | Состояние консоли оболочки | не нужно | [console.getState](console.getState.md) |
 | `console.write` | Запись строки в консоль оболочки | не нужно | [console.write](console.write.md) |
 
+## Общий канал событий (предложение)
+
+`MappHub.bus.publish`, `MappHub.bus.subscribe`, `MappHub.bus.request` — общее пространство сообщений между мини-приложениями и оболочкой. Статус и примеры: [bus.md](bus.md).
+
 Модели разрешений: [../permissions.md](../permissions.md). Протокол: [../rpc-protocol.md](../rpc-protocol.md).
