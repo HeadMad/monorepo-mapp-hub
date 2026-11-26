@@ -8,6 +8,10 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 - **shell:** block silent install over RPC; wire bus into bridge and browser relay; remove legacy console API; add market mini-app (80d0869)
 
+### Chores
+
+- **release:** bump to 0.2.0-beta.7; remove console.* API docs (0a91d6e)
+
 ## v0.2.0-beta.6 — 2026-11-26
 
 ### Added
