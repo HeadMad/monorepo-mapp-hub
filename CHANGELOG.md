@@ -4,6 +4,10 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Documentation
+
+- **api:** design shared event bus and console-as-miniapp tasks (eaade2a)
+
 ### Chores
 
 - point beta channel to v0.2.0-beta.5 in release-manifest (d6605bf)
