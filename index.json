@@ -27,14 +27,14 @@
     {
       "id": "com.mapphub.launcher",
       "name": "MappHub Launcher",
-      "version": "0.1.0-beta.4",
+      "version": "0.1.0-beta.5",
       "permissions": [
         "device.info",
         "notifications.alert"
       ],
       "archive": "launcher.zip",
-      "size": 2557,
-      "sha256": "0383c4a032bdda2e76251ab8e13ae860184d6b08117e17b3c2da187fdae8ed75"
+      "size": 2555,
+      "sha256": "0291ae2edd503b4ff468ccbf8bf37c2bcf14d064b3ace98a3783f1f740aab723"
     },
     {
       "id": "com.mapphub.market",
