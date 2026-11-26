@@ -68,6 +68,10 @@
 
     if (data.__mapp_event__ === true) {
       if (data.event === "themeChanged") reloadThemeCss();
+      if (data.event === "bus.message") {
+        deliverBus(data.payload);
+        return;
+      }
       emit(data.event, data.payload);
       return;
     }
@@ -193,6 +197,32 @@
     }
   }
 
+  const busHandlers = new Map();
+  const busEarly = new Map();
+
+  function deliverBus({ subId, message }) {
+    const fn = busHandlers.get(subId);
+    if (fn) fn(message);
+    else if (busEarly.has(subId)) busEarly.get(subId).push(message);
+    else busEarly.set(subId, [message]);
+  }
+
+  const bus = {
+    publish(type, data, opts = {}) {
+      return call("bus.publish", { type, data, to: opts.to });
+    },
+    async subscribe(filter, fn, opts = {}) {
+      const { subId, replay } = await call("bus.subscribe", { filter, replay: !!opts.replay });
+      busHandlers.set(subId, fn);
+      for (const message of [...replay, ...(busEarly.get(subId) || [])]) fn(message);
+      busEarly.delete(subId);
+      return () => {
+        busHandlers.delete(subId);
+        return call("bus.unsubscribe", { subId });
+      };
+    },
+  };
+
   function formatArg(value) {
     if (typeof value === "string") return value;
     if (value instanceof Error) return value.stack || `${value.name}: ${value.message}`;
@@ -206,7 +236,8 @@
 
   function forwardLog(level, args) {
     if (window.parent === window) return;
-    call("console.write", { level, text: args.map(formatArg).join(" ") }).catch(() => {});
+    const text = args.map(formatArg).join(" ").slice(0, 8000);
+    call("bus.publish", { type: `console.${level}`, data: { text, ts: Date.now() } }).catch(() => {});
   }
 
   for (const level of ["log", "info", "warn", "error", "debug"]) {
@@ -231,6 +262,7 @@
     storage,
     ui,
     theme,
+    bus,
     events: { on, off, once },
     reloadThemeCss,
   };

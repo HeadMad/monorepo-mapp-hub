@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Консоль</title>
+  <script src="https://mapp.local/MappHub.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: #0f172a; color: #e2e8f0; font: 12px ui-monospace, Menlo, Consolas, monospace; display: flex; flex-direction: column; }
+    #head { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: #1e293b; border-bottom: 1px solid #334155; }
+    #count { flex: 1 1 auto; color: #94a3b8; }
+    button { font: inherit; color: #e2e8f0; background: #334155; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+    #list { flex: 1 1 auto; overflow-y: auto; padding: 4px 0; }
+    .row { display: flex; gap: 8px; padding: 2px 8px; border-left: 3px solid transparent; }
+    .row.selected { background: rgba(59, 130, 246, 0.25); }
+    .time { color: #94a3b8; white-space: nowrap; }
+    .src { white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+    .text { white-space: pre-wrap; word-break: break-word; flex: 1 1 auto; }
+    .lvl-info .text { color: #60a5fa; }
+    .lvl-debug .text { color: #a78bfa; }
+    .lvl-warn { background: rgba(251, 191, 36, 0.08); border-left-color: #fbbf24; }
+    .lvl-warn .text { color: #fbbf24; }
+    .lvl-error { background: rgba(248, 113, 113, 0.10); border-left-color: #f87171; }
+    .lvl-error .text { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div id="head">
+    <span id="count">Консоль · 0</span>
+    <button id="copy" type="button">Копировать</button>
+    <button id="clear" type="button">Очистить</button>
+  </div>
+  <div id="list"></div>
+  <script>
+    const MAX_ROWS = 1000;
+    const LABEL = { log: "LOG", info: "INFO", warn: "WARN", error: "ERROR", debug: "DEBUG" };
+    const listEl = document.getElementById("list");
+    const countEl = document.getElementById("count");
+    const copyBtn = document.getElementById("copy");
+    const clearBtn = document.getElementById("clear");
+    const entries = [];
+    const selected = new Set();
+    let seq = 0;
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function sourceColor(source) {
+      if (source === "shell") return "#14b8a6";
+      let hash = 0;
+      for (const ch of source) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return `hsl(${hash % 360} 60% 60%)`;
+    }
+
+    function createRow(entry) {
+      const row = document.createElement("div");
+      row.className = `row lvl-${entry.level}`;
+      if (selected.has(entry.id)) row.classList.add("selected");
+
+      const time = document.createElement("span");
+      time.className = "time";
+      time.textContent = formatTime(entry.ts);
+
+      const src = document.createElement("span");
+      src.className = "src";
+      src.style.color = sourceColor(entry.app);
+      src.textContent = entry.app;
+
+      const text = document.createElement("span");
+      text.className = "text";
+      text.textContent = entry.text;
+
+      row.append(time, src, text);
+      row.addEventListener("click", () => toggleSelect(entry.id, row));
+      return row;
+    }
+
+    function updateCount() {
+      countEl.textContent = `Консоль · ${entries.length}`;
+    }
+
+    function updateCopyLabel() {
+      if (copyBtn.dataset.flash) return;
+      copyBtn.textContent = selected.size ? `Копировать (${selected.size})` : "Копировать";
+    }
+
+    function toggleSelect(id, row) {
+      if (selected.has(id)) selected.delete(id);
+      else selected.add(id);
+      row.classList.toggle("selected", selected.has(id));
+      updateCopyLabel();
+    }
+
+    function onMessage(msg) {
+      const level = msg.type.slice("console.".length);
+      const entry = {
+        id: ++seq,
+        ts: msg.data && msg.data.ts ? msg.data.ts : Date.now(),
+        app: msg.app,
+        level: LABEL[level] ? level : "log",
+        text: String(msg.data && msg.data.text != null ? msg.data.text : ""),
+      };
+      entries.push(entry);
+      if (entries.length > MAX_ROWS) {
+        const dropped = entries.shift();
+        selected.delete(dropped.id);
+        if (listEl.firstElementChild) listEl.firstElementChild.remove();
+      }
+      const stick = listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 24;
+      listEl.append(createRow(entry));
+      if (stick) listEl.scrollTop = listEl.scrollHeight;
+      updateCount();
+      updateCopyLabel();
+    }
+
+    function selectedOrAll() {
+      const pool = selected.size ? entries.filter((e) => selected.has(e.id)) : entries;
+      return pool.map((e) => `${formatTime(e.ts)} [${e.app}] ${LABEL[e.level]}: ${e.text}`).join("\n");
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.append(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return ok;
+      }
+    }
+
+    function flash(label) {
+      copyBtn.dataset.flash = "1";
+      copyBtn.textContent = label;
+      setTimeout(() => {
+        delete copyBtn.dataset.flash;
+        updateCopyLabel();
+      }, 1500);
+    }
+
+    copyBtn.onclick = async () => {
+      const text = selectedOrAll();
+      if (!text) return flash("Пусто");
+      flash((await copyText(text)) ? "Скопировано" : "Ошибка");
+    };
+
+    clearBtn.onclick = () => {
+      entries.length = 0;
+      selected.clear();
+      listEl.replaceChildren();
+      updateCount();
+      updateCopyLabel();
+    };
+
+    MappHub.bus.subscribe({ type: "console.*" }, onMessage, { replay: true }).catch((err) => {
+      countEl.textContent = `Ошибка подписки: ${err.message}`;
+    });
+  </script>
+</body>
+</html>

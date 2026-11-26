@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.2.0-beta.5",
+    "betaVersion": "0.2.0-beta.6",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.5/mapphub-shell-v0.2.0-beta.5.apk",
-    "changelog": "Beta 0.2.0-beta.5: debug console hidden by default (launcher settings menu or console.setVisible); service mini-apps run in a service host and are hidden from the launcher; browser service mini-app; console.setVisible, console.getState, console.write, miniapp.invoke, host.setLayout APIs. Not yet verified on a physical device."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.6/mapphub-shell-v0.2.0-beta.6.apk",
+    "changelog": "Beta 0.2.0-beta.6: shared event bus (MappHub.bus publish/subscribe/unsubscribe); debug console moved to the com.mapphub.console service mini-app; console.* messages go through the bus. Mini-apps opened from the launcher run inside the browser window. Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.5",
-  "versionCode": 20025
+  "version": "0.2.0-beta.6",
+  "versionCode": 20026
 }

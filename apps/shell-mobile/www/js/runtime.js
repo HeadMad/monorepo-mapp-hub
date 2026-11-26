@@ -1,9 +1,10 @@
 import { SHELL_VERSION } from "./version.js";
 import { getInstalled, getSettings, saveInstalled } from "./core/store.js";
 import { runBundleInstall, LAUNCHER_ID, installCatalogApp } from "./installer/bundle.js";
-import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod, invokeBridgeMethod } from "./bridge/MappHostBridge.js";
+import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod, invokeBridgeMethod, originFor } from "./bridge/MappHostBridge.js";
 import { ServiceHost } from "./bridge/services.js";
-import { DebugConsole, formatArgs } from "./console/debugConsole.js";
+import { MessageBus, CONSOLE_ID } from "./bridge/bus.js";
+import { formatArgs } from "./core/formatArgs.js";
 
 // Разрешение, которое проверяется до вызова экшена. Отсутствие записи = разрешение не требуется.
 const PERMISSION_MAP = {
@@ -168,7 +169,8 @@ class MappShellRuntime {
     this.modal = new ModalEngine();
     this.currentAppId = null;
     this.hostedAppId = null;
-    this.debugConsole = new DebugConsole(document.getElementById("debug-console"));
+    this.consoleVisible = false;
+    this.bus = new MessageBus((sub, message) => this.deliverBus(sub, message));
     this.services = new ServiceHost({
       host: document.getElementById("svc-host"),
       urlFor: miniAppUrl,
@@ -186,12 +188,39 @@ class MappShellRuntime {
       const original = console[level].bind(console);
       console[level] = (...args) => {
         original(...args);
-        this.debugConsole.push("shell", level, formatArgs(args));
+        this.publishLog(level, formatArgs(args));
       };
     }
-    window.addEventListener("error", (e) => this.debugConsole.push("shell", "error", e.message));
-    window.addEventListener("unhandledrejection", (e) =>
-      this.debugConsole.push("shell", "error", formatArgs([e.reason])));
+    window.addEventListener("error", (e) => this.publishLog("error", e.message));
+    window.addEventListener("unhandledrejection", (e) => this.publishLog("error", formatArgs([e.reason])));
+  }
+
+  publishLog(level, text) {
+    this.bus.publish("shell", {
+      type: `console.${level}`,
+      data: { text: String(text).slice(0, LOG_MAX_CHARS), ts: Date.now() },
+    });
+  }
+
+  deliverBus(sub, message) {
+    const win = sub.target.iframe.contentWindow;
+    if (!win) return false;
+    win.postMessage(
+      { __mapp_event__: true, event: "bus.message", payload: { subId: sub.subId, message } },
+      originFor(sub.appId),
+    );
+    return true;
+  }
+
+  async setConsoleVisible(visible) {
+    if (visible) {
+      await this.services.targetFrame(CONSOLE_ID);
+      this.services.setLayout("dock", CONSOLE_DOCK_HEIGHT);
+    } else {
+      this.services.setLayout("hidden");
+    }
+    this.consoleVisible = visible;
+    return { visible };
   }
 
   async start() {
@@ -229,6 +258,7 @@ class MappShellRuntime {
 
   loadMiniApp(url, appId = null) {
     unmountMiniApp(this.iframe);
+    this.bus.dropFrame(this.iframe);
     this.currentAppId = appId;
     if (appId) {
       const rec = getInstalled(appId);
@@ -249,7 +279,7 @@ class MappShellRuntime {
     const frame = this.services.frameOf(event.source);
     if (!frame || isBridgeMethod(method)) return;
     try {
-      const result = await this.handleRpc(method, params || {}, frame.appId);
+      const result = await this.handleRpc(method, params || {}, frame.appId, frame.iframe);
       this.reply(event.source, { jsonrpc: "2.0", result, id });
     } catch (err) {
       this.reply(event.source, {
@@ -260,7 +290,7 @@ class MappShellRuntime {
     }
   }
 
-  async handleRpc(method, params, appId) {
+  async handleRpc(method, params, appId, iframe = null) {
     const required = PERMISSION_MAP[method] || null;
     if (required) await this.ensurePermission(required, appId);
 
@@ -276,7 +306,7 @@ class MappShellRuntime {
       throw rpcError(-32600, "Invalid method format. Use category.action");
     }
     const fn = await this.loadApi(category, action);
-    return fn(params, this.apiContext(appId));
+    return fn(params, this.apiContext(appId, iframe));
   }
 
   async navigate(params) {
@@ -337,14 +367,19 @@ class MappShellRuntime {
     return mod.default;
   }
 
-  apiContext(appId) {
+  apiContext(appId, iframe = null) {
     return {
       appId,
+      caller: iframe ? { appId, iframe } : null,
       openModal: (opts) => this.modal.openModal(opts),
       showModal: (opts) => this.modal.openModal(opts).promise,
       install: (params) => this.runInstall(params),
-      debugConsole: this.debugConsole,
+      bus: this.bus,
       services: this.services,
+      console: {
+        getState: () => ({ visible: this.consoleVisible }),
+        setVisible: (visible) => this.setConsoleVisible(visible),
+      },
     };
   }
 

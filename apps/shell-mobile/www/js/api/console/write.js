@@ -1,12 +1,11 @@
-import { getInstalled } from "../../core/store.js";
-
 const LEVELS = new Set(["log", "info", "warn", "error", "debug"]);
-const MAX_TEXT = 10000;
+const MAX_TEXT = 8000;
 
 export default function (params = {}, context) {
-  const rec = context.appId ? getInstalled(context.appId) : null;
-  const source = rec ? rec.name : context.appId || "unknown";
   const level = LEVELS.has(params.level) ? params.level : "log";
-  context.debugConsole.push(source, level, String(params.text ?? "").slice(0, MAX_TEXT));
+  context.bus.publish(context.appId, {
+    type: `console.${level}`,
+    data: { text: String(params.text ?? "").slice(0, MAX_TEXT), ts: Date.now() },
+  });
   return { ok: true };
 }

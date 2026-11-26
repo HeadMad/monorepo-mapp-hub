@@ -1,4 +1,3 @@
 export default function (params = {}, context) {
-  context.debugConsole.setVisible(!!params.visible);
-  return context.debugConsole.getState();
+  return context.console.setVisible(!!params.visible);
 }
