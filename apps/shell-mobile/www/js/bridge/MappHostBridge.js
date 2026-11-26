@@ -64,6 +64,10 @@ export function isBridgeMethod(method) {
   return Object.prototype.hasOwnProperty.call(handlers, method);
 }
 
+export function invokeBridgeMethod(method, params, ctx) {
+  return handlers[method](params, ctx);
+}
+
 export function mountMiniApp(iframe, appId, permissions = []) {
   const ctx = { appId, iframe, permissions: new Set(permissions) };
   frames.set(iframe.contentWindow, ctx);

@@ -1,7 +1,7 @@
 import { SHELL_VERSION } from "./version.js";
 import { getInstalled, getSettings, saveInstalled } from "./core/store.js";
 import { runBundleInstall, LAUNCHER_ID, installCatalogApp } from "./installer/bundle.js";
-import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod } from "./bridge/MappHostBridge.js";
+import { startMappHostBridge, mountMiniApp, unmountMiniApp, isBridgeMethod, invokeBridgeMethod } from "./bridge/MappHostBridge.js";
 import { ServiceHost } from "./bridge/services.js";
 import { DebugConsole, formatArgs } from "./console/debugConsole.js";
 
@@ -15,6 +15,8 @@ const PERMISSION_MAP = {
   "shell.setTokens": "shell.tokens",
   "host.setLayout": "shell.host",
 };
+
+const BROWSER_ID = "com.mapphub.browser";
 
 function miniAppUrl(appId, path = "index.html") {
   return `https://miniapp-${appId}.local/${path}`;
@@ -165,6 +167,7 @@ class MappShellRuntime {
     this.iframe = document.getElementById("app-frame");
     this.modal = new ModalEngine();
     this.currentAppId = null;
+    this.hostedAppId = null;
     this.debugConsole = new DebugConsole(document.getElementById("debug-console"));
     this.services = new ServiceHost({
       host: document.getElementById("svc-host"),
@@ -262,6 +265,7 @@ class MappShellRuntime {
     if (required) await this.ensurePermission(required, appId);
 
     if (method === "shell.navigate") return this.navigate(params);
+    if (method === "host.relay") return this.relay(params, appId);
     if (method === "shell.setTokens") {
       this.updateTokens(params.tokens || {});
       return { success: true };
@@ -275,18 +279,44 @@ class MappShellRuntime {
     return fn(params, this.apiContext(appId));
   }
 
-  navigate(params) {
+  async navigate(params) {
     if (params.appId) {
-      if (!getInstalled(params.appId)) throw rpcError(-32004, "Мини-приложение не установлено");
-      this.loadMiniApp(miniAppUrl(params.appId), params.appId);
+      const rec = getInstalled(params.appId);
+      if (!rec) throw rpcError(-32004, "Мини-приложение не установлено");
+      if (rec.service) throw rpcError(-32004, "Служебное приложение нельзя открыть напрямую");
+      this.hostedAppId = params.appId;
+      await this.services.invoke({
+        to: BROWSER_ID,
+        from: null,
+        method: "browser.open",
+        params: { appId: params.appId, title: rec.name },
+      });
       return { success: true, appId: params.appId };
     }
     const url = String(params.url || "");
     if (!url || url.startsWith("/") || /^https?:/.test(url) || url.includes("..")) {
       throw rpcError(-32602, "Недопустимый путь: укажите путь относительно www");
     }
+    this.hostedAppId = null;
     this.loadMiniApp(url, null);
     return { success: true, appId: null };
+  }
+
+  async relay(params, callerId) {
+    const appId = this.hostedAppId;
+    if (callerId !== BROWSER_ID || !appId || params.appId !== appId) {
+      throw rpcError(-32001, "Relay denied");
+    }
+    const msg = params.message || {};
+    if (typeof msg.method !== "string") throw rpcError(-32600, "Invalid relayed request");
+    if (isBridgeMethod(msg.method)) {
+      const rec = getInstalled(appId);
+      return invokeBridgeMethod(msg.method, msg.params || {}, {
+        appId,
+        permissions: new Set(rec ? rec.permissions || [] : []),
+      });
+    }
+    return this.handleRpc(msg.method, msg.params || {}, appId);
   }
 
   // Загрузка файла экшена: api/<category>/<action>.js. Имена проверяются регулярками, чтобы не выйти из папки api.

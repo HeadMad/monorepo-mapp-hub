@@ -48,6 +48,7 @@
       const BAR_H = 44;
       const FS_DEFAULT = { icon: "⤢", size: 36, opacity: 0.5, position: "top-right" };
       const FS_POSITIONS = ["top-left", "top-right", "bottom-left", "bottom-right"];
+      const APP_ID_RE = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/i;
 
       const PRESETS = {
         close: { icon: "✕", run: () => close() },
@@ -69,6 +70,7 @@
       let mode = "closed";
       let cfg = null;
       let trail = [];
+      let hostedAppId = null;
 
       function runSafe(fn) {
         Promise.resolve()
@@ -104,6 +106,22 @@
           throw new Error("Разрешены только http и https");
         }
         return url.href;
+      }
+
+      function miniAppUrl(appId) {
+        const id = String(appId ?? "");
+        if (!APP_ID_RE.test(id)) throw new Error("Некорректный id приложения");
+        return `https://miniapp-${id}.local/index.html`;
+      }
+
+      function appIdFromUrl(url) {
+        const match = /^https:\/\/miniapp-([a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+)\.local\//i.exec(url);
+        return match ? match[1] : null;
+      }
+
+      function showPage(url) {
+        hostedAppId = appIdFromUrl(url);
+        page.src = url;
       }
 
       function requireOpen() {
@@ -184,6 +202,7 @@
         document.body.dataset.mode = next;
         if (next === "closed") {
           closeMenu();
+          hostedAppId = null;
           page.src = "about:blank";
           return layout("hidden");
         }
@@ -195,12 +214,12 @@
       }
 
       async function open(params = {}) {
-        const url = toHttpUrl(params.url);
+        const url = params.appId ? miniAppUrl(params.appId) : toHttpUrl(params.url);
         cfg = params;
         trail = [url];
         renderBar();
         renderFullscreenButton();
-        page.src = url;
+        showPage(url);
         await setMode("open");
         return { ok: true };
       }
@@ -209,7 +228,7 @@
         requireOpen();
         const url = toHttpUrl(params.url);
         trail.push(url);
-        page.src = url;
+        showPage(url);
         return { ok: true };
       }
 
@@ -241,12 +260,32 @@
       function back() {
         if (trail.length < 2) return;
         trail.pop();
-        page.src = trail[trail.length - 1];
+        showPage(trail[trail.length - 1]);
       }
 
       function reload() {
-        if (trail.length) page.src = trail[trail.length - 1];
+        if (trail.length) showPage(trail[trail.length - 1]);
       }
+
+      async function relay(appId, msg) {
+        const reply = (body) => {
+          if (page.contentWindow) page.contentWindow.postMessage({ jsonrpc: "2.0", id: msg.id, ...body }, `https://miniapp-${appId}.local`);
+        };
+        try {
+          const result = await MappHub.call("host.relay", { appId, message: { method: msg.method, params: msg.params || {} } });
+          reply({ result: result ?? null });
+        } catch (err) {
+          reply({ error: { message: err && err.message ? err.message : String(err) } });
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        if (!hostedAppId || event.source !== page.contentWindow) return;
+        if (event.origin !== `https://miniapp-${hostedAppId}.local`) return;
+        const msg = event.data;
+        if (!msg || msg.jsonrpc !== "2.0" || typeof msg.method !== "string" || msg.id === undefined) return;
+        relay(hostedAppId, msg);
+      });
 
       menuBtn.onclick = (event) => {
         event.stopPropagation();
