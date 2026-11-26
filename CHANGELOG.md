@@ -6,6 +6,7 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Added
 
+- **shell:** shared event bus and console as service mini-app; bump to 0.2.0-beta.6 (82c1b47)
 - **shell:** open mini-apps inside browser window via host.relay (bdf446b)
 
 ### Documentation
