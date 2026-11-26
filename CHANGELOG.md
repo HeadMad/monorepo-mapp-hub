@@ -6,6 +6,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Fixed
 
+- **launcher:** fix syntax error that left launcher on loading screen; add inline-script parse test; bump to 0.2.0-beta.8 (fe5d489)
+
+## v0.2.0-beta.7 — 2026-11-26
+
+### Fixed
+
 - **shell:** block silent install over RPC; wire bus into bridge and browser relay; remove legacy console API; add market mini-app (80d0869)
 
 ### Chores
