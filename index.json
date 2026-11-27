@@ -20,6 +20,7 @@
       "permissions": [],
       "icon": "icon.svg",
       "service": true,
+      "preinstalled": true,
       "archive": "console.zip",
       "size": 3094,
       "sha256": "5efbd9c39792757986e339b41cc3e534a3cb4869c81b99ca93a255edb9e13e79"
@@ -74,14 +75,14 @@
     {
       "id": "com.mapphub.themeeditor",
       "name": "Редактор тем",
-      "version": "0.1.0-beta.4",
+      "version": "0.1.0-beta.5",
       "permissions": [
         "system.theme.read",
         "system.theme.write"
       ],
       "archive": "theme-editor.zip",
-      "size": 4095,
-      "sha256": "8645e34dbee82c36086af4be178045d9877d237a1fe544a3b421018712386179"
+      "size": 10686,
+      "sha256": "f9bbc0b07eb02cb2a314a44fe4ab1833ea13ff9d446bcacab37bbfc0add3f30b"
     }
   ]
 }
