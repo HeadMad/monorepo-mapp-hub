@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.2.0-beta.10",
+    "betaVersion": "0.2.0-beta.11",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.10/mapphub-shell-v0.2.0-beta.10.apk",
-    "changelog": "Beta 0.2.0-beta.10: native system-bar insets (status bar, gesture bar) applied to the WebView; console moved to its own dock so it no longer takes over the browser; console collapse button. Not yet verified on a physical device."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.11/mapphub-shell-v0.2.0-beta.11.apk",
+    "changelog": "Beta 0.2.0-beta.11: dialogs mini-app (alerts, confirmations, update prompt, install panel) and the console are now preinstalled mini-apps talking to the shell over the shared bus; ModalEngine replaced by DialogClient; system-bar insets applied to the activity content view. Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.10",
-  "versionCode": 20030
+  "version": "0.2.0-beta.11",
+  "versionCode": 20031
 }
