@@ -18,6 +18,9 @@
 - Действия: «Сохранить» (`MappHub.theme.save`, недоступно на заводских темах), «Копия» (сохранение под новым id), «Сброс» (`MappHub.theme.reset`, только для `light` и `dark`), «Применить» (`MappHub.theme.apply`).
 - Подключение: `<link id="mapp-theme-css" href="https://mapp.local/theme.css">` и `<script src="https://mapp.local/MappHub.js">`.
 
+### Released
+Выпущено в shell 0.2.0-beta.12 (каталог GitHub Pages, `theme-editor.zip` 0.1.0-beta.5). На устройстве не проверялось.
+
 ### Files
 - `miniapps/theme-editor/index.html`
 - `miniapps/theme-editor/mappmanifest.json`

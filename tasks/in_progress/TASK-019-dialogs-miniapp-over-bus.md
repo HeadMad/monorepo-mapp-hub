@@ -15,7 +15,7 @@
 - [x] Тесты `tests/dialogs/client.test.mjs` входят в `npm test`.
 - [x] Нативные отступы перенесены на `android.R.id.content` (`MainActivity.java`). По коду.
 - [ ] На устройстве или эмуляторе не проверялось: модалки, подтверждения, панель установки, отступы, поведение при установке из Market.
-- [ ] Каталог GitHub Pages содержит `dialogs.zip` — выполняется при выпуске 0.2.0-beta.11.
+- [x] Каталог GitHub Pages содержит `dialogs.zip`, `console.zip` помечен `preinstalled` — обновлён при выпуске 0.2.0-beta.12.
 
 ### Depends on
 - TASK-017 (общий канал событий).
