@@ -16,13 +16,24 @@
     {
       "id": "com.mapphub.console",
       "name": "Консоль",
-      "version": "0.1.0-beta.3",
+      "version": "0.1.0-beta.4",
       "permissions": [],
       "icon": "icon.svg",
       "service": true,
       "archive": "console.zip",
-      "size": 3082,
-      "sha256": "08c78a1dee4ee303be9ef6744e51c75e7d9a4d0095a1ac16d99d7c9b4ef32df8"
+      "size": 3094,
+      "sha256": "5efbd9c39792757986e339b41cc3e534a3cb4869c81b99ca93a255edb9e13e79"
+    },
+    {
+      "id": "com.mapphub.dialogs",
+      "name": "Диалоги",
+      "version": "0.1.0-beta.2",
+      "permissions": [],
+      "service": true,
+      "preinstalled": true,
+      "archive": "dialogs.zip",
+      "size": 4277,
+      "sha256": "f6ba6ed92f172e8d1ff954d1395f8c13026a574bc5c068fd63c3a78a3cf7b599"
     },
     {
       "id": "com.mapphub.launcher",
