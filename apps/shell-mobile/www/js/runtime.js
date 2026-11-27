@@ -30,7 +30,7 @@ const PERMISSION_MAP = {
 const BROWSER_ID = "com.mapphub.browser";
 const SHELL_ID = "shell";
 const CONSOLE_TOGGLE = "shell.console.toggle";
-const CONSOLE_DOCK_HEIGHT = 240;
+const CONSOLE_DOCK_HEIGHT = 260;
 const LOG_MAX_CHARS = 8000;
 
 function miniAppUrl(appId, path = "index.html") {
@@ -193,6 +193,12 @@ class MappShellRuntime {
       main: () => ({ appId: this.currentAppId, iframe: this.iframe }),
       ensureInstalled: (appId) => installCatalogApp(appId, this.apiContext(null)),
     });
+    this.consoleServices = new ServiceHost({
+      host: document.getElementById("console-host"),
+      urlFor: miniAppUrl,
+      main: () => ({ appId: null, iframe: null }),
+      ensureInstalled: (appId) => installCatalogApp(appId, this.apiContext(null)),
+    });
     this.captureShellConsole();
     window.addEventListener("message", (event) => this.onMessage(event));
     startMappHostBridge();
@@ -228,12 +234,12 @@ class MappShellRuntime {
 
   async toggleConsole() {
     if (this.consoleVisible) {
-      this.services.setLayout("hidden");
+      this.consoleServices.setLayout("hidden");
       this.consoleVisible = false;
       return;
     }
-    await this.services.targetFrame(CONSOLE_ID);
-    this.services.setLayout("dock", CONSOLE_DOCK_HEIGHT);
+    await this.consoleServices.targetFrame(CONSOLE_ID);
+    this.consoleServices.setLayout("dock", CONSOLE_DOCK_HEIGHT);
     this.consoleVisible = true;
   }
 
@@ -287,10 +293,11 @@ class MappShellRuntime {
     if (data.jsonrpc !== "2.0") return;
     if (!data.method) {
       this.services.settle(data, event.source);
+      this.consoleServices.settle(data, event.source);
       return;
     }
     const { method, params, id } = data;
-    const frame = this.services.frameOf(event.source);
+    const frame = this.services.frameOf(event.source) || this.consoleServices.frameOf(event.source);
     if (!frame || isBridgeMethod(method)) return;
     try {
       const result = await this.handleRpc(method, params || {}, frame.appId, frame.iframe);

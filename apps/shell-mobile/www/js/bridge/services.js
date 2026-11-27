@@ -20,7 +20,7 @@ export class ServiceHost {
 
   frameOf(win) {
     const main = this.main();
-    if (main.iframe.contentWindow === win) return { appId: main.appId, iframe: main.iframe };
+    if (main.iframe && main.iframe.contentWindow === win) return { appId: main.appId, iframe: main.iframe };
     for (const [appId, iframe] of this.frames) {
       if (iframe.contentWindow === win) return { appId, iframe };
     }

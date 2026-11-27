@@ -2,3 +2,6 @@
 #svc-host.svc-hidden { display: none; }
 #svc-host.svc-overlay { position: fixed; inset: 0; z-index: 7000; }
 #svc-host iframe { display: block; width: 100%; height: 100%; border: none; }
+#console-host { flex: none; position: relative; z-index: 7500; }
+#console-host.svc-hidden { display: none; }
+#console-host iframe { display: block; width: 100%; height: 100%; border: none; }

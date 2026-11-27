@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.2.0-beta.9",
+    "betaVersion": "0.2.0-beta.10",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.9/mapphub-shell-v0.2.0-beta.9.apk",
-    "changelog": "Beta 0.2.0-beta.9: Safe area (viewport-fit=cover and env(safe-area-inset-*)) for shell, browser, and launcher to prevent overlapping with top status bar and bottom gesture handle; fixed console dock sizing and overlapping behavior. Browser version 0.1.0-beta.3, console version 0.1.0-beta.2. Not yet verified on a physical device."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.10/mapphub-shell-v0.2.0-beta.10.apk",
+    "changelog": "Beta 0.2.0-beta.10: native system-bar insets (status bar, gesture bar) applied to the WebView; console moved to its own dock so it no longer takes over the browser; console collapse button. Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.9",
-  "versionCode": 20029
+  "version": "0.2.0-beta.10",
+  "versionCode": 20030
 }
