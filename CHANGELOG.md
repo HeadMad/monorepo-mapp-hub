@@ -4,6 +4,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Documentation
+
+- **tasks:** mark dialogs catalog entry and theme editor 0.2.0-beta.12 release (f78b54c)
+
+## v0.2.0-beta.12 — 2026-11-27
+
 ### Chores
 
 - **release:** shell 0.2.0-beta.12, theme-editor 0.1.0-beta.5 (03e5145)
