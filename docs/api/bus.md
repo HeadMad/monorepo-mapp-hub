@@ -1,6 +1,6 @@
 # Общий канал событий (bus)
 
-Статус: **предложение, не реализовано**. Этот документ фиксирует API, который нужно согласовать до реализации (см. [TASK-017](../../tasks/backlog/TASK-017-shared-event-bus.md)).
+Статус: **реализовано** (с 0.2.0-beta.6). Задача: [TASK-017](../../tasks/done/TASK-017-shared-event-bus.md).
 
 Общее пространство, через которое мини-приложения и оболочка публикуют сообщения, а остальные подписываются на нужные им сообщения. Консоль (см. [TASK-018](../../tasks/backlog/TASK-018-console-as-miniapp.md)) — первый потребитель шины.
 
@@ -23,7 +23,7 @@
 | Вид | Пример `type` | Кто получает |
 |---|---|---|
 | Широковещательный | `weather.updated`, `console.log`, `shell.miniappOpened` | Все подписчики, чей фильтр подходит |
-| Адресный | `to:com.example.todo/add` | Подписчики, у которых фильтр `type` покрывает `to:com.example.todo/*` |
+| Адресный | `publish(type, data, { to: "com.example.todo" })` | Доставляется только приложению из `to`. Подписки по `type` получают его наравне с остальными |
 | Ответ на сообщение | `reply:<id>` | Отправитель исходного сообщения, подписанный на `reply:<id>` |
 
 Адресат указывается в самом типе: `to:<appId>/<действие>`. Получатель подписывается на `to:<свой appId>/*`.
@@ -44,12 +44,11 @@
 ## API в SDK
 
 ```js
-MappHub.bus.publish(type, data)          // → Promise<{ id }>
-MappHub.bus.subscribe(filter, handler)   // → отписка (функция)
-MappHub.bus.request(type, data, { timeout })  // → Promise<reply-сообщение>
+MappHub.bus.publish(type, data, { to })  // → Promise<{ id }>
+MappHub.bus.subscribe(filter, handler, { replay })  // → Promise<{ subId, replay }>
 ```
 
-`request` — надстройка над `publish` и `subscribe`: публикует сообщение, подписывается на `reply:<id>` и возвращает первый ответ или ошибку по таймауту.
+Ответ на сообщение публикуется как `reply:<id исходного сообщения>`; отдельного метода `request` с таймаутом нет.
 
 ## Пример взаимодействия
 
@@ -83,11 +82,11 @@ MappHub.bus.subscribe({ app: "com.example.weather", type: "weather.updated" }, h
 
 ```js
 // Отправитель: com.example.shop
-await MappHub.bus.publish("to:com.example.todo/add", { title: "Купить молоко" });
+await MappHub.bus.publish("todo.add", { title: "Купить молоко" }, { to: "com.example.todo" });
 
 // Получатель: com.example.todo
-MappHub.bus.subscribe({ type: "to:com.example.todo/*" }, (msg) => {
-  // msg.type === "to:com.example.todo/add", msg.app === "com.example.shop"
+MappHub.bus.subscribe({ type: "todo.*" }, (msg) => {
+  // msg.type === "todo.add", msg.app === "com.example.shop", msg.to === "com.example.todo"
   addTask(msg.data.title);
 });
 ```
@@ -96,12 +95,12 @@ MappHub.bus.subscribe({ type: "to:com.example.todo/*" }, (msg) => {
 
 ```js
 // Отправитель: com.example.shop
-const reply = await MappHub.bus.request("to:com.example.todo/list", {}, { timeout: 3000 });
-// reply.type === "reply:<id исходного сообщения>", reply.data.items
+const { id } = await MappHub.bus.publish("list", {}, { to: "com.example.todo" });
+MappHub.bus.subscribe({ type: `reply:${id}` }, (reply) => console.log(reply.data.items));
 
 // Получатель: com.example.todo
-MappHub.bus.subscribe({ type: "to:com.example.todo/list" }, (msg) => {
-  MappHub.bus.publish(`reply:${msg.id}`, { items: getTasks() });
+MappHub.bus.subscribe({ type: "list" }, (msg) => {
+  MappHub.bus.publish(`reply:${msg.id}`, { items: getTasks() }, { to: msg.app });
 });
 ```
 

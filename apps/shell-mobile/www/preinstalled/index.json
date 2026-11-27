@@ -3,14 +3,14 @@
     {
       "id": "com.mapphub.console",
       "name": "Консоль",
-      "version": "0.1.0-beta.3",
+      "version": "0.1.0-beta.4",
       "permissions": [],
       "icon": "icon.svg",
       "service": true,
       "preinstalled": true,
       "archive": "console.zip",
-      "size": 3093,
-      "sha256": "15ee7f2b852dc1791e0006546e8bbd0108e145e44d646e3644fa07421b245b36"
+      "size": 3094,
+      "sha256": "5efbd9c39792757986e339b41cc3e534a3cb4869c81b99ca93a255edb9e13e79"
     },
     {
       "id": "com.mapphub.dialogs",
