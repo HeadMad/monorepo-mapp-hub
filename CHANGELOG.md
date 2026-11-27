@@ -4,6 +4,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Chores
+
+- **release:** point beta channel to v0.2.0-beta.11 (versionCode 20031) (113fbdf)
+
+## v0.2.0-beta.11 — 2026-11-27
+
 ### Added
 
 - **shell:** console and dialogs as preinstalled mini-apps over bus (c02f73c)
