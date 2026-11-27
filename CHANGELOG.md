@@ -4,6 +4,16 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Added
+
+- **shell:** console and dialogs as preinstalled mini-apps over bus (c02f73c)
+
+### Chores
+
+- **shell:** preinstalled archives for console 0.1.0-beta.3 and dialogs 0.1.0-beta.2 (2fde214)
+
+## v0.2.0-beta.10 — 2026-11-27
+
 ### Fixed
 
 - **shell:** native system-bar insets instead of env(); console gets its own dock and collapse button; bump to 0.2.0-beta.10 (a064527)
