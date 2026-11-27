@@ -3,7 +3,7 @@
     {
       "id": "com.mapphub.browser",
       "name": "Браузер",
-      "version": "0.1.0-beta.2",
+      "version": "0.1.0-beta.4",
       "permissions": [
         "shell.host"
       ],
@@ -11,30 +11,30 @@
       "service": true,
       "archive": "browser.zip",
       "size": 4538,
-      "sha256": "2294ec756e39618bf9365cf2a00d80bb639b21ec2f78216d85af82f1528afeec"
+      "sha256": "c414e2379266cd5f8feacb8e2750d98777669aeeaf094fdc6e19bc2c824dff1c"
     },
     {
       "id": "com.mapphub.console",
       "name": "Консоль",
-      "version": "0.1.0-beta.1",
+      "version": "0.1.0-beta.3",
       "permissions": [],
       "icon": "icon.svg",
       "service": true,
       "archive": "console.zip",
-      "size": 3011,
-      "sha256": "58c8f24f18fae2f49a057c2b738e699f1eb30d76c00d668fa05867f950b3fb2b"
+      "size": 3082,
+      "sha256": "08c78a1dee4ee303be9ef6744e51c75e7d9a4d0095a1ac16d99d7c9b4ef32df8"
     },
     {
       "id": "com.mapphub.launcher",
       "name": "MappHub Launcher",
-      "version": "0.1.0-beta.5",
+      "version": "0.1.0-beta.6",
       "permissions": [
         "device.info",
         "notifications.alert"
       ],
       "archive": "launcher.zip",
       "size": 2555,
-      "sha256": "0291ae2edd503b4ff468ccbf8bf37c2bcf14d064b3ace98a3783f1f740aab723"
+      "sha256": "f1888c21e6c7dc8b06cfbe34091886d25930cfbc5c1d25e09b73712fc174d888"
     },
     {
       "id": "com.mapphub.market",
