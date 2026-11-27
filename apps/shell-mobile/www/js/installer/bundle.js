@@ -7,10 +7,8 @@ const CATALOG_URL = `https://github.com/HeadMad/monorepo-mapp-hub/releases/downl
 const BASE_MESSAGE = "Выберите приложения для установки. Приложение по умолчанию откроется при запуске.";
 const SILENT_WARNING = "Тихая установка: все разрешения из манифестов будут выданы автоматически, без подтверждения.";
 
-let consoleUi = null;
-
 export async function runBundleInstall(context) {
-  const catalog = await loadCatalog(context);
+  const catalog = (await loadCatalog(context)).filter((app) => !app.preinstalled);
   const choice = await context.openModal({
     title: "Установка мини-приложений",
     message: BASE_MESSAGE,
@@ -28,7 +26,7 @@ export async function runBundleInstall(context) {
   const selected = catalog.filter((app) => choice.checked[app.id]);
   if (!selected.length) return false;
   const silent = !!choice.checked.silent;
-  const ui = getConsole();
+  const ui = context.installUi;
   const names = Object.fromEntries(selected.map((app) => [app.id, app.name]));
   ui.start(`Установка: ${selected.length} шт.`);
   ui.log(`Тихая установка: ${silent ? "да" : "нет"}`);
@@ -103,57 +101,3 @@ export async function installCatalogApp(appId, context) {
   if (!res.installed) throw new Error(`«${app.name}» не установлено`);
 }
 
-function getConsole() {
-  if (!consoleUi) consoleUi = new InstallConsole();
-  return consoleUi;
-}
-
-class InstallConsole {
-  constructor() {
-    this.bar = document.getElementById("install-bar");
-    this.fill = document.getElementById("install-bar-fill");
-    this.barText = document.getElementById("install-bar-text");
-    this.panel = document.getElementById("install-console");
-    this.title = document.getElementById("install-console-title");
-    this.logEl = document.getElementById("install-log");
-    this.closeBtn = document.getElementById("install-console-close");
-    this.bar.onclick = () => this.setOpen(this.panel.hidden);
-    this.closeBtn.onclick = () => this.dismiss();
-    window.addEventListener("blur", () => this.setOpen(false));
-  }
-
-  start(title) {
-    this.title.textContent = title;
-    this.logEl.textContent = "";
-    this.fill.style.width = "0%";
-    this.barText.textContent = "Установка... нажмите, чтобы открыть лог";
-    this.closeBtn.hidden = true;
-    this.bar.hidden = false;
-  }
-
-  setOpen(open) {
-    this.panel.hidden = !open;
-  }
-
-  log(message) {
-    this.logEl.textContent += `${new Date().toLocaleTimeString()}  ${message}\n`;
-    this.logEl.scrollTop = this.logEl.scrollHeight;
-  }
-
-  progress(name, percent) {
-    this.fill.style.width = `${percent}%`;
-    this.barText.textContent = `${name}: ${percent}%`;
-  }
-
-  finish(text) {
-    this.fill.style.width = "100%";
-    this.barText.textContent = `${text}. Откройте лог и нажмите «Закрыть»`;
-    this.log(text);
-    this.closeBtn.hidden = false;
-  }
-
-  dismiss() {
-    this.bar.hidden = true;
-    this.setOpen(false);
-  }
-}

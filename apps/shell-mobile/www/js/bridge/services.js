@@ -3,7 +3,7 @@ import { mountMiniApp, unmountMiniApp, originFor } from "./MappHostBridge.js";
 
 const INVOKE_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 20000;
-const LAYOUT_MODES = new Set(["hidden", "overlay", "dock"]);
+const LAYOUT_MODES = new Set(["hidden", "overlay", "dock", "toast", "bar"]);
 const MAX_DOCK_HEIGHT = 300;
 
 export class ServiceHost {

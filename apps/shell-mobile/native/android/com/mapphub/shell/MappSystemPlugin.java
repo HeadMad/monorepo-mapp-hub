@@ -109,12 +109,20 @@ public class MappSystemPlugin extends Plugin {
         run(call, () -> {
             String appId = requireAppId(call);
             String version = requireString(call, "version");
-            String archiveUrl = requireString(call, "archiveUrl");
+            String archiveUrl = call.getString("archiveUrl");
+            String archiveAsset = call.getString("archiveAsset");
+            if ((archiveUrl == null) == (archiveAsset == null)) {
+                throw new IllegalArgumentException("exactly one of archiveUrl or archiveAsset is required");
+            }
             String sha256 = call.getString("sha256");
             if (!MappPackageManager.isSafeSegment(version)) throw new IllegalArgumentException("invalid version");
             File zip = new File(getContext().getCacheDir(), appId + "-" + version + ".zip");
             try {
-                downloadArchive(appId, archiveUrl, zip);
+                if (archiveAsset != null) {
+                    copyAsset(archiveAsset, zip);
+                } else {
+                    downloadArchive(appId, archiveUrl, zip);
+                }
                 if (sha256 != null && !sha256.equalsIgnoreCase(sha256Of(zip))) {
                     throw new IOException("archive checksum mismatch");
                 }
@@ -129,6 +137,16 @@ public class MappSystemPlugin extends Plugin {
             result.put("activeVersion", version);
             return result;
         });
+    }
+
+    private void copyAsset(String path, File target) throws IOException {
+        if (path.contains("..") || path.startsWith("/")) throw new IOException("invalid asset path");
+        try (InputStream in = getContext().getAssets().open("public/" + path);
+             OutputStream out = new FileOutputStream(target)) {
+            byte[] buffer = new byte[16384];
+            int read;
+            while ((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+        }
     }
 
     private void downloadArchive(String appId, String archiveUrl, File target) throws IOException {

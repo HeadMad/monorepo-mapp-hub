@@ -8,6 +8,7 @@ import { deflateRawSync, crc32 } from "node:zlib";
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const SOURCE_DIR = "miniapps";
 const OUT_DIR = "dist/miniapps";
+const PREINSTALL_DIR = "apps/shell-mobile/www/preinstalled";
 const SKIP_DIRS = new Set(["_sdk"]);
 const ID = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/i;
 const DOS_EPOCH = { date: (0 << 9) | (1 << 5) | 1, time: 0 };
@@ -84,13 +85,17 @@ function readManifest(dir) {
   return manifest;
 }
 
-export function packMiniApps({ root = ROOT, outDir = OUT_DIR } = {}) {
+export function packMiniApps({ root = ROOT, outDir = OUT_DIR, preinstallDir = PREINSTALL_DIR } = {}) {
   const sourceRoot = join(root, SOURCE_DIR);
   const target = join(root, outDir);
+  const preTarget = join(root, preinstallDir);
   rmSync(target, { recursive: true, force: true });
+  rmSync(preTarget, { recursive: true, force: true });
   mkdirSync(target, { recursive: true });
+  mkdirSync(preTarget, { recursive: true });
 
   const apps = [];
+  const preinstalled = [];
   for (const name of readdirSync(sourceRoot).sort()) {
     const dir = join(sourceRoot, name);
     if (SKIP_DIRS.has(name) || !statSync(dir).isDirectory()) continue;
@@ -99,22 +104,29 @@ export function packMiniApps({ root = ROOT, outDir = OUT_DIR } = {}) {
     const archive = `${name}.zip`;
     const zip = buildZip(entries);
     writeFileSync(join(target, archive), zip);
-    apps.push({
+    const entry = {
       id: manifest.id,
       name: manifest.name,
       version: manifest.version,
       permissions: manifest.permissions || [],
       ...(manifest.icon ? { icon: manifest.icon } : {}),
       ...(manifest.service ? { service: true } : {}),
+      ...(manifest.preinstalled ? { preinstalled: true } : {}),
       archive,
       size: zip.length,
       sha256: createHash("sha256").update(zip).digest("hex"),
-    });
+    };
+    apps.push(entry);
+    if (manifest.preinstalled) {
+      writeFileSync(join(preTarget, archive), zip);
+      preinstalled.push(entry);
+    }
   }
 
   const ids = apps.map((a) => a.id);
   if (new Set(ids).size !== ids.length) throw new Error("duplicate app ids in miniapps/");
   writeFileSync(join(target, "index.json"), JSON.stringify({ apps }, null, 2) + "\n");
+  writeFileSync(join(preTarget, "index.json"), JSON.stringify({ apps: preinstalled }, null, 2) + "\n");
   return apps;
 }
 

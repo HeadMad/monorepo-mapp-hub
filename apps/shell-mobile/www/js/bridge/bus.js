@@ -1,6 +1,8 @@
 export const BUFFER_SIZE = 500;
 export const MAX_DATA_BYTES = 10 * 1024;
 export const CONSOLE_ID = "com.mapphub.console";
+export const DIALOGS_ID = "com.mapphub.dialogs";
+export const SHELL_ID = "shell";
 
 function rpcError(code, message) {
   return Object.assign(new Error(message), { code });

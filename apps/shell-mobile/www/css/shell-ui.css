@@ -5,3 +5,9 @@
 #console-host { flex: none; position: relative; z-index: 7500; }
 #console-host.svc-hidden { display: none; }
 #console-host iframe { display: block; width: 100%; height: 100%; border: none; }
+#dialog-host.svc-hidden { display: none; }
+#dialog-host.svc-toast { position: fixed; inset: 0; z-index: 9990; pointer-events: none; }
+#dialog-host.svc-toast iframe { pointer-events: none; }
+#dialog-host.svc-overlay { position: fixed; inset: 0; z-index: 9999; }
+#dialog-host.svc-bar { position: fixed; left: 0; right: 0; bottom: 0; height: 28px; z-index: 9000; }
+#dialog-host iframe { display: block; width: 100%; height: 100%; border: none; background: transparent; }

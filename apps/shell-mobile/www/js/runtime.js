@@ -13,8 +13,10 @@ import {
   unmountRelayed,
 } from "./bridge/MappHostBridge.js";
 import { ServiceHost } from "./bridge/services.js";
-import { MessageBus, CONSOLE_ID } from "./bridge/bus.js";
+import { MessageBus, CONSOLE_ID, SHELL_ID } from "./bridge/bus.js";
 import { formatArgs } from "./core/formatArgs.js";
+import { installPreinstalled } from "./installer/preinstalled.js";
+import { DialogClient } from "./dialogs/client.js";
 
 // Разрешение, которое проверяется до вызова экшена. Отсутствие записи = разрешение не требуется.
 const PERMISSION_MAP = {
@@ -28,7 +30,6 @@ const PERMISSION_MAP = {
 };
 
 const BROWSER_ID = "com.mapphub.browser";
-const SHELL_ID = "shell";
 const CONSOLE_TOGGLE = "shell.console.toggle";
 const CONSOLE_DOCK_HEIGHT = 260;
 const LOG_MAX_CHARS = 8000;
@@ -43,144 +44,9 @@ function rpcError(code, message) {
   return e;
 }
 
-// Единое модальное окно оболочки с очередью. Все окна (алерты, разрешения, установка, обновления)
-// проходят через него и открываются по одному.
-class ModalEngine {
-  constructor() {
-    this.el = document.getElementById("system-modal");
-    this.titleEl = document.getElementById("modal-title");
-    this.messageEl = document.getElementById("modal-message");
-    this.checksEl = document.getElementById("modal-checks");
-    this.progressEl = document.getElementById("modal-progress");
-    this.progressBarEl = document.getElementById("modal-progress-bar");
-    this.actionsEl = document.getElementById("modal-actions");
-    this.queue = [];
-    this.current = null;
-  }
-
-  // Возвращает handle: { promise, update(patch), close() }. promise резолвится {action, checked}.
-  openModal(opts = {}) {
-    const state = { opts: this.normalize(opts), resolve: null, promise: null, handle: null };
-    state.promise = new Promise((resolve) => (state.resolve = resolve));
-    state.handle = {
-      promise: state.promise,
-      update: (patch) => this.update(state, patch),
-      close: () => this.finish(state, this.result(state, "closed")),
-    };
-    this.queue.push(state);
-    if (!this.current) this.showNext();
-    return state.handle;
-  }
-
-  normalize(opts) {
-    return { ...opts, checkboxes: (opts.checkboxes || []).map((c) => ({ ...c })) };
-  }
-
-  update(state, patch) {
-    const next = { ...patch };
-    if (next.checkboxes) next.checkboxes = next.checkboxes.map((c) => ({ ...c }));
-    Object.assign(state.opts, next);
-    if (this.current === state) this.render(state);
-  }
-
-  showNext() {
-    this.current = this.queue.shift() || null;
-    if (!this.current) {
-      this.el.style.display = "none";
-      return;
-    }
-    this.render(this.current);
-  }
-
-  result(state, action) {
-    const o = state.opts;
-    return {
-      action,
-      checked: Object.fromEntries((o.checkboxes || []).map((c) => [c.id, !!c.checked])),
-      radios: Object.fromEntries((o.radios || []).map((r) => [r.id, r.value])),
-    };
-  }
-
-  finish(state, result) {
-    if (this.current === state) {
-      this.current = null;
-      this.showNext();
-    } else {
-      this.queue = this.queue.filter((s) => s !== state);
-    }
-    state.resolve(result);
-  }
-
-  render(state) {
-    const o = state.opts;
-    this.titleEl.textContent = o.title || "";
-    this.messageEl.textContent = o.message || "";
-
-    this.checksEl.innerHTML = "";
-    for (const c of o.checkboxes) {
-      const label = document.createElement("label");
-      label.className = "modal-check";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.checked = !!c.checked;
-      input.disabled = !!c.disabled;
-      input.onchange = () => {
-        c.checked = input.checked;
-        if (o.onChange) o.onChange(this.result(state, null), state.handle);
-      };
-      const text = document.createElement("span");
-      text.textContent = c.label;
-      label.append(input, text);
-      this.checksEl.append(label);
-    }
-
-    for (const r of o.radios || []) {
-      const group = document.createElement("div");
-      group.className = "modal-radio-group";
-      for (const opt of r.options) {
-        const label = document.createElement("label");
-        label.className = "modal-check";
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = "radio-" + r.id;
-        input.value = opt.value;
-        input.checked = r.value === opt.value;
-        input.onchange = () => {
-          r.value = opt.value;
-        };
-        const text = document.createElement("span");
-        text.textContent = opt.label;
-        label.append(input, text);
-        group.append(label);
-      }
-      this.checksEl.append(group);
-    }
-
-    if (typeof o.progress === "number") {
-      this.progressEl.hidden = false;
-      this.progressBarEl.style.width = Math.min(100, Math.max(0, o.progress)) + "%";
-    } else {
-      this.progressEl.hidden = true;
-    }
-
-    const buttons = o.buttons && o.buttons.length ? o.buttons : [{ id: "ok", text: "OK", primary: true }];
-    this.actionsEl.innerHTML = "";
-    for (const b of buttons) {
-      const btn = document.createElement("button");
-      btn.textContent = b.text;
-      btn.className = b.primary ? "btn-primary" : "btn-secondary";
-      btn.disabled = !!b.disabled;
-      btn.onclick = () => this.finish(state, this.result(state, b.id || "ok"));
-      this.actionsEl.append(btn);
-    }
-    this.el.style.display = "flex";
-  }
-}
-
 class MappShellRuntime {
   constructor() {
     this.iframe = document.getElementById("app-frame");
-    this.modal = new ModalEngine();
     this.currentAppId = null;
     this.hostedAppId = null;
     this.consoleVisible = false;
@@ -195,6 +61,12 @@ class MappShellRuntime {
     });
     this.consoleServices = new ServiceHost({
       host: document.getElementById("console-host"),
+      urlFor: miniAppUrl,
+      main: () => ({ appId: null, iframe: null }),
+      ensureInstalled: (appId) => installCatalogApp(appId, this.apiContext(null)),
+    });
+    this.dialogService = new ServiceHost({
+      host: document.getElementById("dialog-host"),
       urlFor: miniAppUrl,
       main: () => ({ appId: null, iframe: null }),
       ensureInstalled: (appId) => installCatalogApp(appId, this.apiContext(null)),
@@ -225,6 +97,10 @@ class MappShellRuntime {
   }
 
   deliverBus(sub, message) {
+    if (sub.target.local) {
+      sub.target.local(message);
+      return true;
+    }
     if (sub.appId === SHELL_ID) {
       this.toggleConsole().catch((err) => console.error(err.message));
       return true;
@@ -244,6 +120,8 @@ class MappShellRuntime {
   }
 
   async start() {
+    await installPreinstalled();
+    this.dialogs = new DialogClient({ bus: this.bus, host: this.dialogService });
     let startId = this.startAppId();
     while (!startId) {
       await runBundleInstall(this.apiContext(null));
@@ -294,10 +172,11 @@ class MappShellRuntime {
     if (!data.method) {
       this.services.settle(data, event.source);
       this.consoleServices.settle(data, event.source);
+      this.dialogService.settle(data, event.source);
       return;
     }
     const { method, params, id } = data;
-    const frame = this.services.frameOf(event.source) || this.consoleServices.frameOf(event.source);
+    const frame = this.services.frameOf(event.source) || this.consoleServices.frameOf(event.source) || this.dialogService.frameOf(event.source);
     if (!frame || isBridgeMethod(method)) return;
     try {
       const result = await this.handleRpc(method, params || {}, frame.appId, frame.iframe);
@@ -395,8 +274,15 @@ class MappShellRuntime {
     return {
       appId,
       caller: iframe ? { appId, iframe } : null,
-      openModal: (opts) => this.modal.openModal(opts),
-      showModal: (opts) => this.modal.openModal(opts).promise,
+      openModal: (opts) => this.dialogs.open(opts),
+      showModal: (opts) => this.dialogs.open(opts).promise,
+      toast: (opts) => this.dialogs.toast(opts),
+      installUi: {
+        start: (title) => this.dialogs.installStart(title),
+        log: (text) => this.dialogs.installLog(text),
+        progress: (name, percent) => this.dialogs.installProgress(name, percent),
+        finish: (text) => this.dialogs.installFinish(text),
+      },
       install: (params) => this.runInstall(params),
       services: this.services,
     };
@@ -417,7 +303,7 @@ class MappShellRuntime {
     const granted = rec.permissions || [];
     if (granted.includes(required)) return;
 
-    const first = await this.modal.openModal({
+    const first = await this.dialogs.open({
       title: "Нет разрешения",
       message: `У мини-приложения «${rec.name}» нет разрешения «${required}».\n\nВы можете выдать его сейчас.`,
       buttons: [{ id: "cancel", text: "Отмена" }, { id: "fix", text: "Исправить", primary: true }],
@@ -428,7 +314,7 @@ class MappShellRuntime {
     if (!requested.includes(required)) {
       throw rpcError(-32001, `Permission ${required} не объявлено в mappmanifest.json`);
     }
-    const second = await this.modal.openModal({
+    const second = await this.dialogs.open({
       title: `Разрешения: ${rec.name}`,
       message: "Отметьте разрешения, которые выдаете мини-приложению:",
       checkboxes: requested.map((p) => ({ id: p, label: p, checked: granted.includes(p) })),

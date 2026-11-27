@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Диалоги</title>
+  <script src="https://mapp.local/MappHub.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; background: transparent; color: var(--app-text, #e2e8f0); font-family: system-ui, sans-serif; }
+    [hidden] { display: none !important; }
+    #system-modal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+    }
+    .modal-card {
+      background: var(--app-card-bg, #1e293b); border: 1px solid var(--app-border, #334155); border-radius: var(--app-radius, 12px);
+      padding: 24px; width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box;
+    }
+    .modal-card h3 { margin: 0 0 12px; font-size: 1.2rem; }
+    .modal-card p { margin: 0 0 12px; color: var(--app-text-muted, #94a3b8); font-size: 0.95rem; line-height: 1.4; white-space: pre-line; }
+    .modal-check { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; cursor: pointer; font-size: 0.95rem; }
+    .modal-check input { margin-top: 3px; }
+    .modal-radio-group { margin-top: 8px; }
+    #modal-progress { height: 8px; background: var(--app-border, #334155); border-radius: 4px; overflow: hidden; margin: 12px 0; }
+    #modal-progress-bar { height: 100%; width: 0; background: var(--app-primary, #3b82f6); transition: width 0.2s; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+    .modal-actions button { padding: 10px 16px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
+    .modal-actions button:disabled { opacity: 0.5; cursor: default; }
+    .btn-primary { background: var(--app-primary, #3b82f6); color: white; }
+    .btn-primary:hover { background: var(--app-primary-hover, #2563eb); }
+    .btn-secondary { background: transparent; color: var(--app-text, #e2e8f0); border: 1px solid var(--app-border, #334155) !important; }
+    #shell-toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      max-width: 90vw; padding: 10px 16px; border-radius: 8px; z-index: 10000;
+      background: var(--app-card-bg, #1e293b); color: var(--app-text, #e2e8f0); border: 1px solid var(--app-border, #334155);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4); font-size: 0.95rem; text-align: center; pointer-events: none; box-sizing: border-box;
+    }
+    body.has-bar #shell-toast { bottom: 40px; }
+    #install-bar { position: fixed; left: 0; right: 0; bottom: 0; height: 28px; background: var(--app-card-bg, #1e293b); border-top: 1px solid var(--app-border, #334155); cursor: pointer; overflow: hidden; box-sizing: border-box; }
+    #install-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--app-primary, #3b82f6); opacity: 0.35; transition: width 0.2s; }
+    #install-bar-text { position: relative; display: block; padding: 0 12px; line-height: 28px; font-size: 0.8rem; color: var(--app-text-muted, #94a3b8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #install-console { position: fixed; left: 0; right: 0; bottom: 28px; height: 50vh; display: flex; flex-direction: column; background: var(--app-card-bg, #1e293b); border-top: 1px solid var(--app-border, #334155); box-shadow: 0 -6px 16px rgba(0,0,0,0.4); box-sizing: border-box; }
+    .console-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--app-border, #334155); font-weight: 600; }
+    .console-head button { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; background: var(--app-primary, #3b82f6); color: white; margin-left: 6px; }
+    .console-head button.btn-ghost { background: transparent; color: var(--app-text, #e2e8f0); border: 1px solid var(--app-border, #334155); }
+    #install-log { flex: 1 1 auto; margin: 0; padding: 10px 12px; overflow-y: auto; font: 12px/1.45 monospace; white-space: pre-wrap; color: var(--app-text, #e2e8f0); }
+  </style>
+</head>
+<body>
+  <div id="system-modal">
+    <div class="modal-card">
+      <h3 id="modal-title"></h3>
+      <p id="modal-message"></p>
+      <div id="modal-checks"></div>
+      <div id="modal-progress" hidden><div id="modal-progress-bar"></div></div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+  <div id="shell-toast" hidden></div>
+  <div id="install-bar" hidden>
+    <div id="install-bar-fill"></div>
+    <span id="install-bar-text"></span>
+  </div>
+  <div id="install-console" hidden>
+    <div class="console-head">
+      <span id="install-console-title">Установка</span>
+      <span>
+        <button id="install-console-collapse" class="btn-ghost">Свернуть</button>
+        <button id="install-console-close" hidden>Закрыть</button>
+      </span>
+    </div>
+    <pre id="install-log"></pre>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
