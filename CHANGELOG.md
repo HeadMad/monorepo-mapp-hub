@@ -10,6 +10,8 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Chores
 
+- ignore build artifacts (dist, node_modules, generated android project) (978adc0)
+- **release:** shell 0.2.0-beta.11, console 0.1.0-beta.4 via bus (3facc46)
 - **shell:** preinstalled archives for console 0.1.0-beta.3 and dialogs 0.1.0-beta.2 (2fde214)
 
 ## v0.2.0-beta.10 — 2026-11-27
