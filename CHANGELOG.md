@@ -6,6 +6,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Fixed
 
+- **shell:** native system-bar insets instead of env(); console gets its own dock and collapse button; bump to 0.2.0-beta.10 (a064527)
+
+## v0.2.0-beta.9 — 2026-11-27
+
+### Fixed
+
 - **shell:** safe area and notch/gesture insets for shell, browser, launcher, and console; bump to 0.2.0-beta.9 (f5869cc)
 
 ## v0.2.0-beta.8 — 2026-11-26
