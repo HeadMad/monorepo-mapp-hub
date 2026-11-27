@@ -6,6 +6,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Fixed
 
+- **shell:** safe area and notch/gesture insets for shell, browser, launcher, and console; bump to 0.2.0-beta.9 (f5869cc)
+
+## v0.2.0-beta.8 — 2026-11-26
+
+### Fixed
+
 - **launcher:** fix syntax error that left launcher on loading screen; add inline-script parse test; bump to 0.2.0-beta.8 (fe5d489)
 
 ## v0.2.0-beta.7 — 2026-11-26
