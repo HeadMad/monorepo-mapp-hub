@@ -24,8 +24,8 @@ const res = await MappHub.<category>("<action>", { ...params });
 | `miniapp.invoke` | Вызов экспонированного метода другого мини-приложения | не нужно | [miniapp.invoke](miniapp.invoke.md) |
 | `host.setLayout` | Скрыть, поверх экрана или прижать служебный iframe | `shell.host` | [host.setLayout](host.setLayout.md) |
 
-## Общий канал событий (предложение)
+## Общий канал событий
 
-`MappHub.bus.publish`, `MappHub.bus.subscribe`, `MappHub.bus.request` — общее пространство сообщений между мини-приложениями и оболочкой. Статус и примеры: [bus.md](bus.md).
+`MappHub.bus.publish`, `MappHub.bus.subscribe`, `MappHub.bus.unsubscribe` — общее пространство сообщений между мини-приложениями и оболочкой. Метода `request` в SDK нет: запрос-ответ собирается из пары сообщений и `reply:<id>`. Примеры: [bus.md](bus.md).
 
 Модели разрешений: [../permissions.md](../permissions.md). Протокол: [../rpc-protocol.md](../rpc-protocol.md).

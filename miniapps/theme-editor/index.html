@@ -2,78 +2,266 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Редактор тем</title>
   <link id="mapp-theme-css" rel="stylesheet" href="https://mapp.local/theme.css">
   <script src="https://mapp.local/MappHub.js"></script>
   <style>
-    body { margin: 0; font-family: var(--mapp-font-family); font-size: var(--mapp-font-size-base);
-      background: var(--mapp-color-bg); color: var(--mapp-color-text); }
-    header, main { padding: 16px; }
-    h1 { font-size: 20px; margin: 0 0 12px; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-    select, input, textarea, button { font: inherit; border-radius: var(--mapp-radius-sm); }
-    select, input, textarea { background: var(--mapp-color-surface); color: var(--mapp-color-text);
-      border: 1px solid var(--mapp-color-border); padding: 6px 8px; }
-    textarea { width: 100%; min-height: 140px; box-sizing: border-box; font-family: monospace; }
-    button { border: none; padding: 8px 12px; cursor: pointer; }
-    button.primary { background: var(--mapp-color-primary); color: var(--mapp-color-primary-text); }
-    button.secondary { background: var(--mapp-color-surface); color: var(--mapp-color-text);
-      border: 1px solid var(--mapp-color-border); }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 12px 0; }
-    .field { display: flex; flex-direction: column; gap: 4px; background: var(--mapp-color-surface);
-      border: 1px solid var(--mapp-color-border); border-radius: var(--mapp-radius-md); padding: 8px; }
-    .field span { color: var(--mapp-color-muted); font-size: 12px; }
-    .field .row { display: flex; gap: 6px; align-items: center; }
-    .status { min-height: 20px; margin: 8px 0; color: var(--mapp-color-muted); }
-    .status.error { color: var(--mapp-color-danger); }
-    .preview { border: 1px dashed var(--mapp-color-border); border-radius: var(--mapp-radius-lg);
-      padding: 16px; background: var(--mapp-color-bg); }
-    .preview .card { background: var(--mapp-color-surface); border-radius: var(--mapp-radius-md);
-      padding: 16px; border: 1px solid var(--mapp-color-border); }
-    .preview .badge { display: inline-block; padding: 2px 8px; border-radius: var(--mapp-radius-sm);
-      background: var(--mapp-color-primary); color: var(--mapp-color-primary-text); font-size: 12px; }
-    .preview .danger { color: var(--mapp-color-danger); }
-    .preview .muted { color: var(--mapp-color-muted); }
+    :root {
+      --te-bg: var(--mapp-bg, var(--mapp-color-bg, #f6f8fa));
+      --te-surface: var(--mapp-surface, var(--mapp-color-surface, #ffffff));
+      --te-surface-2: var(--mapp-surface-2, var(--mapp-bg-elevated, #ffffff));
+      --te-muted-bg: var(--mapp-bg-muted, #eaeef2);
+      --te-border: var(--mapp-border, var(--mapp-color-border, #d0d7de));
+      --te-text: var(--mapp-text, var(--mapp-color-text, #1f2328));
+      --te-muted: var(--mapp-muted, var(--mapp-color-muted, #656d76));
+      --te-primary: var(--mapp-primary, var(--mapp-color-primary, #2563eb));
+      --te-primary-text: var(--mapp-color-primary-text, #ffffff);
+      --te-danger: var(--mapp-danger, var(--mapp-color-danger, #dc2626));
+      --te-radius-sm: var(--mapp-radius-sm, 6px);
+      --te-radius: var(--mapp-radius-md, var(--mapp-radius, 18px));
+      --te-radius-lg: var(--mapp-radius-lg, var(--mapp-radius-xl, 24px));
+      --te-gap: var(--mapp-space-2, 8px);
+      --te-font: var(--mapp-font-family, 'Roboto', system-ui, sans-serif);
+      --te-font-size: var(--mapp-font-size-base, 16px);
+      --te-control-h: var(--mapp-control-h, 44px);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--te-font);
+      font-size: var(--te-font-size);
+      background: var(--te-bg);
+      color: var(--te-text);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app { padding: 12px 12px calc(24px + env(safe-area-inset-bottom, 0px)); max-width: 720px; margin: 0 auto; }
+
+    .topbar { display: flex; flex-direction: column; gap: var(--te-gap); margin-bottom: 12px; }
+
+    .topbar-row { display: flex; gap: var(--te-gap); align-items: center; }
+
+    .theme-select {
+      flex: 1; min-width: 0; height: var(--te-control-h);
+      font: inherit; color: var(--te-text); background: var(--te-surface);
+      border: 1px solid var(--te-border); border-radius: var(--te-radius);
+      padding: 0 12px;
+    }
+
+    .pill {
+      display: none; padding: 4px 10px; border-radius: 999px; font-size: 12px;
+      background: var(--te-muted-bg); color: var(--te-muted); white-space: nowrap;
+    }
+    .pill.on { display: inline-block; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: var(--te-gap); }
+
+    .btn {
+      flex: 1 1 auto; min-height: 40px; padding: 0 14px; font: inherit; font-size: 14px;
+      color: var(--te-text); background: var(--te-surface);
+      border: 1px solid var(--te-border); border-radius: 999px; cursor: pointer;
+    }
+    .btn.primary { background: var(--te-primary); color: var(--te-primary-text); border-color: transparent; }
+    .btn:disabled { opacity: 0.45; cursor: default; }
+    .btn.dirty { box-shadow: 0 0 0 2px color-mix(in srgb, var(--te-primary) 35%, transparent); }
+
+    .new-id-row { display: none; gap: var(--te-gap); }
+    .new-id-row.on { display: flex; }
+    .new-id-row input {
+      flex: 1; min-width: 0; min-height: 40px; font: inherit; font-size: 14px; padding: 0 12px;
+      color: var(--te-text); background: var(--te-surface);
+      border: 1px solid var(--te-border); border-radius: 999px;
+    }
+
+    .status { min-height: 18px; font-size: 12px; color: var(--te-muted); }
+    .status.error { color: var(--te-danger); }
+
+    .search {
+      width: 100%; min-height: 40px; font: inherit; font-size: 14px; padding: 0 14px;
+      color: var(--te-text); background: var(--te-surface);
+      border: 1px solid var(--te-border); border-radius: 999px;
+    }
+    .search::placeholder { color: var(--te-muted); }
+
+    .card {
+      background: var(--te-surface); border: 1px solid var(--te-border);
+      border-radius: var(--te-radius-lg); margin-bottom: 12px; overflow: hidden;
+    }
+
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 16px 16px; cursor: pointer; user-select: none;
+      font-size: 15px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--te-text);
+    }
+    .card-head.static { cursor: default; }
+    .card-head::-webkit-details-marker { display: none; }
+    .card-head .head-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .card-head .count { font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--te-muted); }
+    .card-head .mark { width: 7px; height: 7px; border-radius: 50%; background: var(--te-primary); display: none; flex: none; }
+    .card.is-edited .card-head .mark { display: block; }
+    .card-head .chev {
+      flex: none; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 6px solid var(--te-muted); transition: transform 0.15s ease;
+    }
+    .card.closed .card-head .chev { transform: rotate(-90deg); }
+
+    .card-body { padding: 0 16px 8px; border-top: 1px solid var(--te-border); }
+    .card.closed .card-body { display: none; }
+
+    .row {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(132px, 46%);
+      gap: 10px; align-items: center; padding: 10px 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--te-border) 55%, transparent);
+    }
+    .row:last-child { border-bottom: none; }
+    .row.hidden { display: none; }
+
+    .row-name { min-width: 0; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+    .tok-name {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 13px; color: var(--te-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .row.absent .tok-name { opacity: 0.7; }
+    .tok-label { font-size: 11px; color: var(--te-muted); opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .ctl { display: flex; align-items: stretch; min-height: 42px; gap: 0; }
+
+    .ctl.color {
+      border: 1px solid var(--te-border); border-radius: 999px; overflow: hidden; background: var(--te-surface-2);
+    }
+    .ctl.color .swatch {
+      width: 46px; flex: none; border: none; padding: 0; cursor: pointer;
+      border-right: 1px solid var(--te-border);
+    }
+    .ctl.color .hex {
+      flex: 1; min-width: 0; border: none; background: transparent; color: var(--te-text);
+      font: inherit; font-size: 14px; padding: 0 12px; text-transform: lowercase;
+    }
+    .ctl.color .native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+    .ctl.stepper {
+      border: 1px solid var(--te-border); border-radius: 999px; overflow: hidden; background: var(--te-surface-2);
+    }
+    .ctl.stepper .step {
+      width: 42px; flex: none; border: none; background: transparent; color: var(--te-text);
+      font: inherit; font-size: 20px; line-height: 1; cursor: pointer;
+    }
+    .ctl.stepper .step:active { background: var(--te-muted-bg); }
+    .ctl.stepper .value-wrap {
+      flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 1px;
+      border-left: 1px solid var(--te-border); border-right: 1px solid var(--te-border);
+    }
+    .ctl.stepper .num {
+      width: 100%; min-width: 0; border: none; background: transparent; color: var(--te-text);
+      font: inherit; font-size: 15px; text-align: center; padding: 0;
+    }
+    .ctl.stepper .unit { font: inherit; font-size: 15px; color: var(--te-muted); padding-right: 6px; }
+
+    .ctl.text input {
+      width: 100%; min-width: 0; font: inherit; font-size: 14px; padding: 0 12px;
+      color: var(--te-text); background: var(--te-surface-2);
+      border: 1px solid var(--te-border); border-radius: 999px;
+    }
+
+    input:focus, button:focus-visible, select:focus-visible { outline: 2px solid var(--te-primary); outline-offset: 1px; }
+    input { outline: none; }
+
+    .row.absent .ctl { opacity: 0.6; }
+
+    .raw-card .card-body { padding: 12px 16px 16px; }
+    .raw-card textarea {
+      width: 100%; min-height: 160px; resize: vertical;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5;
+      color: var(--te-text); background: var(--te-surface-2);
+      border: 1px solid var(--te-border); border-radius: var(--te-radius); padding: 10px 12px;
+    }
+
+    .preview { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 16px; }
+    .pv-card {
+      background: var(--te-muted-bg); border-radius: var(--te-radius); padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .pv-title { font-size: 15px; font-weight: 600; }
+    .pv-text { margin: 0; font-size: 14px; }
+    .pv-muted { color: var(--te-muted); }
+    .pv-danger { color: var(--te-danger); }
+    .pv-btn {
+      min-height: var(--te-control-h); padding: 0 18px; border: none; cursor: default;
+      font: inherit; font-size: 15px; border-radius: var(--te-radius);
+      background: var(--te-primary); color: var(--te-primary-text);
+    }
+    .pv-badge {
+      display: inline-block; padding: 3px 10px; font-size: 12px; border-radius: 999px;
+      background: var(--te-surface); border: 1px solid var(--te-border); color: var(--te-muted);
+    }
+    .pv-input {
+      width: 100%; min-height: var(--te-control-h); padding: 0 14px; font: inherit; font-size: 15px;
+      color: var(--te-text); background: var(--te-surface);
+      border: 1px solid var(--te-border); border-radius: var(--te-radius);
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Редактор тем</h1>
-    <div class="toolbar">
-      <label>Тема <select id="theme-select"></select></label>
-      <span id="active-label" class="muted"></span>
-    </div>
-    <div class="toolbar">
-      <input id="new-id" placeholder="id новой темы" maxlength="32">
-      <button class="primary" id="btn-save-new">Сохранить как новую</button>
-      <button class="secondary" id="btn-overwrite">Перезаписать</button>
-      <button class="secondary" id="btn-reset">Сбросить к заводским</button>
-      <button class="primary" id="btn-apply-all">Применить ко всем приложениям</button>
-    </div>
-    <div id="status" class="status"></div>
-  </header>
-  <main>
-    <div id="fields" class="fields"></div>
-    <label>Сырой CSS
-      <textarea id="raw" spellcheck="false"></textarea>
-    </label>
-    <h2 style="font-size: 16px;">Предпросмотр (без сохранения)</h2>
-    <div id="preview" class="preview">
-      <div class="card">
-        <h3 style="margin: 0 0 8px;">Карточка</h3>
-        <p class="muted">Текст второстепенный. <span class="danger">Опасное действие.</span></p>
-        <p><input placeholder="Поле ввода"> <button class="primary">Основная</button>
-          <button class="secondary">Вторичная</button> <span class="badge">Бейдж</span></p>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-row">
+        <select id="theme-select" class="theme-select" aria-label="Тема"></select>
+        <span id="active-label" class="pill"></span>
       </div>
-    </div>
-  </main>
+      <div class="actions">
+        <button id="btn-save" class="btn primary" type="button">Сохранить</button>
+        <button id="btn-save-new" class="btn" type="button">Копия</button>
+        <button id="btn-reset" class="btn" type="button">Сброс</button>
+        <button id="btn-apply" class="btn" type="button">Применить</button>
+      </div>
+      <div id="new-id-row" class="new-id-row">
+        <input id="new-id" placeholder="id новой темы" maxlength="32" autocapitalize="off" spellcheck="false">
+        <button id="btn-save-as" class="btn primary" type="button">Сохранить</button>
+      </div>
+      <div id="status" class="status"></div>
+      <input id="search" class="search" placeholder="Поиск токена" spellcheck="false" autocomplete="off">
+    </header>
+
+    <main>
+      <div id="sections"></div>
+
+      <details class="card raw-card">
+        <summary class="card-head"><span class="head-main">Сырой CSS</span><i class="chev"></i></summary>
+        <div class="card-body">
+          <textarea id="raw" spellcheck="false"></textarea>
+        </div>
+      </details>
+
+      <section class="card">
+        <div class="card-head static"><span class="head-main">Превью</span></div>
+        <div class="card-body">
+          <div class="preview">
+            <div class="pv-card">
+              <div class="pv-title">Карточка</div>
+              <p class="pv-text">Основной текст, <span class="pv-muted">вторичный текст</span> и <span class="pv-danger">опасное действие</span>.</p>
+              <div class="pv-row"><button class="pv-btn" type="button">Кнопка</button> <span class="pv-badge">Бейдж</span></div>
+              <input class="pv-input" placeholder="Поле ввода" readonly>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
   <script type="module">
-    import { parseRootVars, buildRootCss, validateValue, isHexColor } from "./tokens.js";
+    import {
+      parseRootVars, buildRootCss, buildModel, setVar, removeVar,
+      validateValue, isHexColor, isLengthPx, parseLengthPx, formatLengthPx, findVar,
+    } from "./tokens.js";
 
     const el = (id) => document.getElementById(id);
-    const state = { themes: [], activeThemeId: null, currentId: null, vars: [] };
+    const OPEN_KEY = "theme-editor:open-sections";
+    const state = { themes: [], activeThemeId: null, currentId: null, vars: [], open: new Set(), query: "", dirty: false };
+    const applied = new Set();
 
     function showStatus(message, isError = false) {
       el("status").textContent = message;
@@ -81,127 +269,437 @@
     }
 
     function currentTheme() {
-      return state.themes.find((t) => t.id === state.currentId);
+      return state.themes.find((t) => t.id === state.currentId) || null;
+    }
+
+    function markDirty(value = true) {
+      state.dirty = value;
+      el("btn-save").classList.toggle("dirty", value && !isBuiltin());
+    }
+
+    function isBuiltin() {
+      const theme = currentTheme();
+      return Boolean(theme && theme.builtin);
     }
 
     function updateButtons() {
-      const builtin = currentTheme() ? currentTheme().builtin : false;
-      el("btn-overwrite").disabled = !state.currentId || builtin;
+      const builtin = isBuiltin();
+      el("btn-save").disabled = !state.currentId || builtin;
       el("btn-reset").disabled = !state.currentId || !builtin;
+      el("btn-apply").disabled = !state.currentId;
+      el("btn-save").classList.toggle("dirty", state.dirty && !builtin);
     }
 
-    function renderPreview() {
-      const box = el("preview");
-      box.removeAttribute("style");
-      for (const v of state.vars) {
-        try {
-          box.style.setProperty(v.name, validateValue(v.name, v.value));
-        } catch (err) {
-          continue;
+    function loadOpenState() {
+      try {
+        const raw = localStorage.getItem(OPEN_KEY);
+        if (raw) state.open = new Set(JSON.parse(raw));
+        else state.open = new Set(["colors"]);
+      } catch (err) {
+        state.open = new Set(["colors"]);
+      }
+    }
+
+    function saveOpenState() {
+      try {
+        localStorage.setItem(OPEN_KEY, JSON.stringify([...state.open]));
+      } catch (err) {
+        /* приватный режим — не критично */
+      }
+    }
+
+    function cssValue(row) {
+      const current = findVar(state.vars, row.name);
+      return current ? current.value : row.value;
+    }
+
+    function forEachRow(fn) {
+      for (const section of el("sections").children) {
+        for (const row of section.querySelectorAll(".row")) fn(row, section);
+      }
+    }
+
+    // Значения токенов применяются к самому редактору: правки видно сразу.
+    function applyToDocument() {
+      const root = document.documentElement;
+      const keep = new Set();
+      for (const section of buildModel(state.vars)) {
+        for (const row of section.rows) {
+          if (!row.present && !findVar(state.vars, row.name)) continue;
+          keep.add(row.name);
+          try {
+            root.style.setProperty(row.name, validateValue(row.name, cssValue(row)));
+          } catch (err) {
+            continue;
+          }
         }
       }
+      for (const name of [...applied]) {
+        if (!keep.has(name)) {
+          root.style.removeProperty(name);
+          applied.delete(name);
+        }
+      }
+      for (const name of keep) applied.add(name);
     }
 
     function syncRaw() {
       el("raw").value = buildRootCss(state.vars);
     }
 
-    function changeVar(v, value) {
-      v.value = value;
-      syncRaw();
-      renderPreview();
+    function collectCss() {
+      return buildRootCss(state.vars);
     }
 
-    function renderFields() {
-      const container = el("fields");
-      container.innerHTML = "";
-      for (const v of state.vars) {
-        const wrap = document.createElement("label");
-        wrap.className = "field";
-        const title = document.createElement("span");
-        title.textContent = v.name;
-        const row = document.createElement("div");
-        row.className = "row";
-        if (v.group === "color" && isHexColor(v.value)) {
-          const picker = document.createElement("input");
-          picker.type = "color";
-          picker.value = v.value.toLowerCase();
-          picker.addEventListener("input", () => changeVar(v, picker.value));
-          row.append(picker);
-        } else if (v.group === "radius" && /^\d+(\.\d+)?px$/.test(v.value)) {
-          const number = document.createElement("input");
-          number.type = "number";
-          number.min = "0";
-          number.step = "1";
-          number.value = parseFloat(v.value);
-          number.addEventListener("input", () => changeVar(v, `${number.value}px`));
-          row.append(number, document.createTextNode("px"));
-        } else {
-          const text = document.createElement("input");
-          text.type = "text";
-          text.value = v.value;
-          text.addEventListener("input", () => changeVar(v, text.value));
-          row.append(text);
-        }
-        wrap.append(title, row);
-        container.append(wrap);
+    function setSectionEdited(sectionEl, sectionId) {
+      const model = buildModel(state.vars).find((s) => s.id === sectionId);
+      if (!model) return;
+      const edited = model.rows.some((row) => row.present && row.default !== null && row.value !== row.default);
+      sectionEl.classList.toggle("is-edited", edited);
+    }
+
+    function writeValue(rowEl, row, value) {
+      try {
+        setVar(state.vars, row.name, value);
+      } catch (err) {
+        showStatus(err.message, true);
+        return false;
       }
+      rowEl.classList.remove("absent");
+      markDirty();
+      syncRaw();
+      applyToDocument();
+      showStatus("");
+      return true;
+    }
+
+    function resetRow(rowEl, row) {
+      if (row.default === null) return;
+      if (row.present) {
+        if (row.value === row.default) {
+          removeVar(state.vars, row.name);
+          rowEl.classList.add("absent");
+        } else {
+          setVar(state.vars, row.name, row.default);
+        }
+      }
+      const input = rowEl.querySelector("input");
+      if (input) input.value = row.kind === "length" ? String(parseLengthPx(cssValue(row)) ?? "") : cssValue(row);
+      markDirty();
+      syncRaw();
+      applyToDocument();
+      showStatus(`Сброшено: ${row.name}`);
+    }
+
+    function colorControl(rowEl, row) {
+      const ctl = document.createElement("div");
+      ctl.className = "ctl color";
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "swatch";
+      swatch.setAttribute("aria-label", `Цвет ${row.name}`);
+      swatch.style.background = cssValue(row);
+
+      const hex = document.createElement("input");
+      hex.className = "hex";
+      hex.value = cssValue(row);
+      hex.spellcheck = false;
+      hex.autocomplete = "off";
+      hex.maxLength = 7;
+
+      const native = document.createElement("input");
+      native.type = "color";
+      native.className = "native";
+      native.value = isHexColor(cssValue(row)) ? cssValue(row) : "#000000";
+
+      swatch.addEventListener("click", () => native.click());
+      native.addEventListener("input", () => {
+        if (!writeValue(rowEl, row, native.value)) return;
+        hex.value = native.value;
+        swatch.style.background = native.value;
+      });
+      hex.addEventListener("input", () => {
+        const value = hex.value.trim();
+        if (!isHexColor(value)) return;
+        if (!writeValue(rowEl, row, value)) return;
+        swatch.style.background = value;
+        native.value = value;
+      });
+      hex.addEventListener("blur", () => {
+        hex.value = cssValue(row);
+      });
+
+      ctl.append(swatch, hex, native);
+      return ctl;
+    }
+
+    function lengthControl(rowEl, row) {
+      const ctl = document.createElement("div");
+      ctl.className = "ctl stepper";
+      const start = cssValue(row);
+      const numeric = parseLengthPx(start);
+
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "step";
+      minus.textContent = "\u2212";
+      minus.setAttribute("aria-label", "Меньше");
+
+      const wrap = document.createElement("div");
+      wrap.className = "value-wrap";
+      const num = document.createElement("input");
+      num.className = "num";
+      num.inputMode = "numeric";
+      num.value = numeric === null ? start : String(numeric);
+      const unit = document.createElement("span");
+      unit.className = "unit";
+      unit.textContent = "px";
+      if (numeric === null) unit.style.display = "none";
+      wrap.append(num, unit);
+
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "step";
+      plus.textContent = "+";
+      plus.setAttribute("aria-label", "Больше");
+
+      const step = row.step || 1;
+      const min = row.min ?? 0;
+      const max = row.max ?? 999;
+      const apply = (value) => {
+        const clamped = Math.min(max, Math.max(min, value));
+        num.value = String(clamped);
+        unit.style.display = "";
+        if (writeValue(rowEl, row, formatLengthPx(clamped))) row.value = formatLengthPx(clamped);
+      };
+
+      minus.addEventListener("click", () => {
+        const base = parseLengthPx(cssValue(row));
+        apply((base ?? (parseFloat(num.value) || 0)) - step);
+      });
+      plus.addEventListener("click", () => {
+        const base = parseLengthPx(cssValue(row));
+        apply((base ?? (parseFloat(num.value) || 0)) + step);
+      });
+      num.addEventListener("change", () => {
+        const parsed = parseFloat(String(num.value).replace(",", "."));
+        if (Number.isFinite(parsed)) apply(parsed);
+        else num.value = String(parseLengthPx(cssValue(row)) ?? "");
+      });
+      num.addEventListener("blur", () => {
+        const parsed = parseFloat(String(num.value).replace(",", "."));
+        if (Number.isFinite(parsed)) {
+          apply(parsed);
+        } else {
+          const current = parseLengthPx(cssValue(row));
+          num.value = current === null ? "" : String(current);
+        }
+      });
+
+      ctl.append(minus, wrap, plus);
+      return ctl;
+    }
+
+    function textControl(rowEl, row) {
+      const ctl = document.createElement("div");
+      ctl.className = "ctl text";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = cssValue(row);
+      input.spellcheck = false;
+      input.autocomplete = "off";
+      input.addEventListener("input", () => {
+        if (!input.value.trim()) return;
+        writeValue(rowEl, row, input.value);
+      });
+      input.addEventListener("blur", () => {
+        input.value = cssValue(row);
+      });
+      ctl.append(input);
+      return ctl;
+    }
+
+    function rowElement(row, section) {
+      const rowEl = document.createElement("div");
+      rowEl.className = row.present ? "row" : "row absent";
+      rowEl.dataset.name = row.name;
+      rowEl.dataset.search = `${row.name} ${row.label} ${cssValue(row)}`.toLowerCase();
+
+      const name = document.createElement("div");
+      name.className = "row-name";
+      const code = document.createElement("code");
+      code.className = "tok-name";
+      code.textContent = row.name;
+      const label = document.createElement("span");
+      label.className = "tok-label";
+      label.textContent = row.present ? row.label : `${row.label} · по умолчанию`;
+      name.append(code, label);
+      name.addEventListener("click", () => resetRow(rowEl, row));
+
+      let ctl;
+      if (row.kind === "color") ctl = colorControl(rowEl, row);
+      else if (row.kind === "length") ctl = lengthControl(rowEl, row);
+      else ctl = textControl(rowEl, row);
+
+      rowEl.append(name, ctl);
+      if (state.query) {
+        const haystack = `${row.name} ${row.label} ${cssValue(row)}`.toLowerCase();
+        if (!haystack.includes(state.query)) rowEl.classList.add("hidden");
+      }
+      rowEl.addEventListener("input", () => setSectionEdited(rowEl.closest(".card"), section.id));
+      rowEl.addEventListener("click", () => setSectionEdited(rowEl.closest(".card"), section.id));
+      return rowEl;
+    }
+
+    function sectionElement(section) {
+      const card = document.createElement("section");
+      card.className = "card";
+      card.dataset.section = section.id;
+      if (!state.open.has(section.id)) card.classList.add("closed");
+
+      const head = document.createElement("div");
+      head.className = "card-head";
+      head.setAttribute("role", "button");
+      head.tabIndex = 0;
+      const main = document.createElement("span");
+      main.className = "head-main";
+      const title = document.createElement("span");
+      title.textContent = section.title;
+      const mark = document.createElement("i");
+      mark.className = "mark";
+      const count = document.createElement("span");
+      count.className = "count";
+      count.textContent = String(section.rows.length);
+      main.append(mark, title, count);
+      const chev = document.createElement("i");
+      chev.className = "chev";
+      head.append(main, chev);
+
+      const body = document.createElement("div");
+      body.className = "card-body";
+      for (const row of section.rows) body.append(rowElement(row, section));
+
+      const toggle = () => {
+        const closed = card.classList.toggle("closed");
+        if (closed) state.open.delete(section.id);
+        else state.open.add(section.id);
+        saveOpenState();
+      };
+      head.addEventListener("click", toggle);
+      head.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      });
+
+      card.append(head, body);
+      setSectionEdited(card, section.id);
+      return card;
+    }
+
+    function render() {
+      const container = el("sections");
+      container.replaceChildren(...buildModel(state.vars).map(sectionElement));
+      if (state.query) {
+        for (const card of container.children) {
+          const visible = [...card.querySelectorAll(".row")].some((row) => !row.classList.contains("hidden"));
+          card.classList.toggle("hidden", !visible);
+          if (visible) card.classList.remove("closed");
+        }
+      }
+    }
+
+    function refresh() {
+      render();
+      syncRaw();
+      applyToDocument();
     }
 
     function setVars(vars) {
       state.vars = vars;
-      renderFields();
-      syncRaw();
-      renderPreview();
+      markDirty(false);
+      refresh();
     }
 
     async function loadThemes(selectId) {
       const res = await MappHub.theme.getList();
-      state.themes = res.themes;
+      state.themes = res.themes || [];
       state.activeThemeId = res.activeThemeId;
-      el("active-label").textContent = `Активна: ${state.activeThemeId}`;
-      el("theme-select").innerHTML = "";
-      for (const t of state.themes) {
+      el("active-label").textContent = state.activeThemeId ? `активна: ${state.activeThemeId}` : "";
+      el("active-label").classList.toggle("on", Boolean(state.activeThemeId));
+      el("theme-select").replaceChildren(...state.themes.map((t) => {
         const opt = document.createElement("option");
         opt.value = t.id;
         opt.textContent = t.builtin ? `${t.id} (заводская)` : t.id;
-        el("theme-select").append(opt);
-      }
+        return opt;
+      }));
       await selectTheme(selectId || state.currentId || state.activeThemeId);
     }
 
     async function selectTheme(id) {
+      if (!id) return;
       const css = await MappHub.theme.getCss(id);
       state.currentId = id;
       el("theme-select").value = id;
       setVars(parseRootVars(css));
       updateButtons();
-      showStatus(`Открыта тема ${id}`);
+      const builtin = isBuiltin();
+      showStatus(builtin ? `Открыта заводская тема ${id}: сохранение недоступно, доступен сброс` : `Открыта тема ${id}`);
     }
 
-    function collectCss() {
-      return buildRootCss(state.vars);
-    }
+    el("theme-select").addEventListener("change", (e) => {
+      selectTheme(e.target.value).catch((err) => showStatus(err.message, true));
+    });
 
-    el("theme-select").addEventListener("change", (e) => selectTheme(e.target.value).catch((err) => showStatus(err.message, true)));
+    el("search").addEventListener("input", (e) => {
+      state.query = e.target.value.trim().toLowerCase();
+      render();
+      applyToDocument();
+    });
 
     el("raw").addEventListener("input", () => {
       try {
         const vars = parseRootVars(el("raw").value);
         vars.forEach((v) => validateValue(v.name, v.value));
         state.vars = vars;
-        renderFields();
-        renderPreview();
+        render();
+        applyToDocument();
+        markDirty();
         showStatus("");
       } catch (err) {
         showStatus(err.message, true);
       }
     });
 
-    el("btn-save-new").addEventListener("click", async () => {
+    el("btn-save").addEventListener("click", async () => {
+      if (!state.currentId) return;
+      try {
+        await MappHub.theme.save(state.currentId, collectCss());
+        markDirty(false);
+        updateButtons();
+        showStatus(`Тема ${state.currentId} сохранена`);
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    });
+
+    el("btn-save-new").addEventListener("click", () => {
+      el("new-id-row").classList.toggle("on");
+      if (el("new-id-row").classList.contains("on")) el("new-id").focus();
+    });
+
+    el("btn-save-as").addEventListener("click", async () => {
       const id = el("new-id").value.trim();
+      if (!id) {
+        showStatus("Укажите id новой темы", true);
+        return;
+      }
       try {
         await MappHub.theme.save(id, collectCss());
+        el("new-id-row").classList.remove("on");
+        el("new-id").value = "";
+        markDirty(false);
         await loadThemes(id);
         showStatus(`Тема ${id} сохранена`);
       } catch (err) {
@@ -209,16 +707,8 @@
       }
     });
 
-    el("btn-overwrite").addEventListener("click", async () => {
-      try {
-        await MappHub.theme.save(state.currentId, collectCss());
-        showStatus(`Тема ${state.currentId} перезаписана`);
-      } catch (err) {
-        showStatus(err.message, true);
-      }
-    });
-
     el("btn-reset").addEventListener("click", async () => {
+      if (!state.currentId) return;
       try {
         await MappHub.theme.reset(state.currentId);
         await selectTheme(state.currentId);
@@ -228,21 +718,26 @@
       }
     });
 
-    el("btn-apply-all").addEventListener("click", async () => {
+    el("btn-apply").addEventListener("click", async () => {
+      if (!state.currentId) return;
       try {
         await MappHub.theme.apply(state.currentId);
         state.activeThemeId = state.currentId;
-        el("active-label").textContent = `Активна: ${state.activeThemeId}`;
-        showStatus(`Тема ${state.currentId} применена ко всем приложениям`);
+        el("active-label").textContent = `активна: ${state.currentId}`;
+        el("active-label").classList.add("on");
+        showStatus(`Тема ${state.currentId} применена`);
       } catch (err) {
         showStatus(err.message, true);
       }
     });
 
     MappHub.events.on("themeChanged", (payload) => {
-      el("active-label").textContent = `Активна: ${payload.themeId}`;
+      state.activeThemeId = payload.themeId;
+      el("active-label").textContent = `активна: ${payload.themeId}`;
+      el("active-label").classList.add("on");
     });
 
+    loadOpenState();
     loadThemes().catch((err) => showStatus(err.message, true));
   </script>
 </body>

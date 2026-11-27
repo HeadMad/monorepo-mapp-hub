@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.2.0-beta.11",
+    "betaVersion": "0.2.0-beta.12",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.11/mapphub-shell-v0.2.0-beta.11.apk",
-    "changelog": "Beta 0.2.0-beta.11: dialogs mini-app (alerts, confirmations, update prompt, install panel) and the console are now preinstalled mini-apps talking to the shell over the shared bus; ModalEngine replaced by DialogClient; system-bar insets applied to the activity content view. Not yet verified on a physical device."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.12/mapphub-shell-v0.2.0-beta.12.apk",
+    "changelog": "Beta 0.2.0-beta.12: theme editor reworked around a token catalogue - grouped categories with collapsible spoilers, live preview, search, per-category non-default markers; rows bind to the token name the theme really uses; docs/themes.md documents storage and alias rules. Theme editor could fail to render because of a mixed ?? / || expression; a test now parses every mini-app script. Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.11",
-  "versionCode": 20031
+  "version": "0.2.0-beta.12",
+  "versionCode": 20032
 }
