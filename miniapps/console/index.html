@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Консоль</title>
   <script src="https://mapp.local/MappHub.js"></script>
   <style>
-    html, body { height: 100%; margin: 0; }
-    body { background: #0f172a; color: #e2e8f0; font: 12px ui-monospace, Menlo, Consolas, monospace; display: flex; flex-direction: column; }
+    html, body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; height: 100%; margin: 0; }
+    body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; background: #0f172a; color: #e2e8f0; font: 12px ui-monospace, Menlo, Consolas, monospace; display: flex; flex-direction: column; }
     #head { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: #1e293b; border-bottom: 1px solid #334155; }
     #count { flex: 1 1 auto; color: #94a3b8; }
     button { font: inherit; color: #e2e8f0; background: #334155; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
