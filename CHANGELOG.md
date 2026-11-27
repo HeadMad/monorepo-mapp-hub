@@ -6,6 +6,7 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Chores
 
+- **release:** shell 0.2.0-beta.12, theme-editor 0.1.0-beta.5 (03e5145)
 - **release:** point beta channel to v0.2.0-beta.11 (versionCode 20031) (113fbdf)
 
 ## v0.2.0-beta.11 — 2026-11-27
