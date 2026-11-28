@@ -6,6 +6,12 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ### Fixed
 
+- **theme:** make theme.css generator read Rhino string wrappers (0.2.0-beta.14) (c009fd0)
+
+## v0.2.0-beta.13 — 2026-11-28
+
+### Fixed
+
 - **theme:** serve theme.css from generator and link it in the shell (abe87cf)
 
 ### Documentation
