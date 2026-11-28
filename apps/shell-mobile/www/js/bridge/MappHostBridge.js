@@ -1,3 +1,5 @@
+import { parseCssVariables } from "../core/cssTokens.js";
+
 const PLUGIN_NAME = "MappSystem";
 const THEME_READ = "system.theme.read";
 const THEME_WRITE = "system.theme.write";
@@ -39,9 +41,15 @@ const handlers = {
     plugin().storageGetKeys({ appId: ctx.appId }),
   "storage.clear": (_params, ctx) =>
     plugin().storageClear({ appId: ctx.appId }),
+  // Токены активной темы. Раньше метод читал system_kv/theme/tokens — туда никто
+  // не пишет, поэтому мини-приложения всегда получали пустой набор. Единственный
+  // источник правды: active_theme в config плюс CSS этой темы в themes/<id>.
   "ui.getThemeTokens": async () => {
-    const res = await plugin().systemGet({ namespace: "theme", key: "tokens" });
-    return { tokens: res.value ? JSON.parse(res.value) : {} };
+    const list = await plugin().themeGetList({});
+    const themeId = list && list.activeThemeId;
+    if (!themeId) return { tokens: {} };
+    const res = await plugin().themeGetCss({ themeId });
+    return { tokens: parseCssVariables(res && res.css) };
   },
   "theme.getList": guarded(THEME_READ, () => plugin().themeGetList({})),
   "theme.getCss": guarded(THEME_READ, (p) => plugin().themeGetCss({ themeId: p.themeId })),

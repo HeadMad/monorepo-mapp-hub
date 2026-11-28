@@ -17,10 +17,18 @@ var THEME_ID = /^[a-z0-9_-]{1,32}$/;
 var DEFAULT_THEME_ID = "light";
 var EMPTY_THEME = ":root {\n}\n";
 
+// Rhino отдаёт java.lang.String, возвращённую из Java-метода, как обёртку
+// (typeof === "object"), а не как строку JS. Поэтому проверять тип через typeof
+// нельзя: настоящая тема молча превращалась бы в пустой :root {}. Приводим
+// значение к строке явно и считаем пустым всё, что не строка после приведения.
 function readKv(db, namespace, key) {
     try {
         var value = db.getSystemKv(namespace, key);
-        return typeof value === "string" ? value : null;
+        if (value === null || value === undefined) {
+            return null;
+        }
+        var text = String(value);
+        return text.length > 0 ? text : null;
     } catch (e) {
         return null;
     }

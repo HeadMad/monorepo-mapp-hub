@@ -1,11 +1,11 @@
 {
   "shell": {
     "version": "0.1.0-beta.2",
-    "betaVersion": "0.2.0-beta.13",
+    "betaVersion": "0.2.0-beta.14",
     "stableUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.1.0-beta.2/mapphub-shell-v0.1.0-beta.2.apk",
-    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.13/mapphub-shell-v0.2.0-beta.13.apk",
-    "changelog": "Beta 0.2.0-beta.13: https://mapp.local/theme.css finally answers. The handler looked for public/assets/theme.css and had no generator to fall back on, so every theme reload got a 404. The generator (www/assets/theme.css.js, Rhino/ES5) rebuilds the :root block from the active theme in SQLite, so the theme editor, the SDK reload and the shell all read the same CSS. The shell now links theme.css and aliases its --app-* tokens onto --mapp-* with fallbacks, so it follows the active theme without breaking when the file is missing. Mini-apps that still hard-code colours are unchanged. Not yet verified on a physical device."
+    "betaUrl": "https://github.com/HeadMad/monorepo-mapp-hub/releases/download/v0.2.0-beta.14/mapphub-shell-v0.2.0-beta.14.apk",
+    "changelog": "Beta 0.2.0-beta.14: theme changes now reach the shell and mini-apps. The theme.css generator always returned an empty :root on Android because Rhino passes Java strings as wrapper objects and the generator checked typeof === \"string\"; it now converts the value explicitly, and a regression test covers the wrapper case. Mini-apps (launcher, market, console, dialogs, browser, sample game) load theme.css and read --mapp-* tokens through --app-* aliases. The theme editor is styled through the same tokens, so edits repaint the editor at once. Verified in headless Chromium with the shell's wiring (tests/e2e-theme, 8/8). Not yet verified on a physical device."
   },
-  "version": "0.2.0-beta.13",
-  "versionCode": 20033
+  "version": "0.2.0-beta.14",
+  "versionCode": 20034
 }

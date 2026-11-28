@@ -5,19 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Маркет</title>
   <script src="https://mapp.local/MappHub.js"></script>
+  <!-- CSS активной темы: отдаёт нативный слой по https://mapp.local/theme.css -->
+  <link id="mapp-theme-css" rel="stylesheet" href="https://mapp.local/theme.css">
   <style>
-    html, body { margin: 0; min-height: 100%; background: #0f172a; color: #f8fafc; font-family: sans-serif; }
+    /* Палитра мини-приложения. Значения приходят из активной темы по
+       https://mapp.local/theme.css (переменные --mapp-*); в скобках — заводские
+       цвета, чтобы интерфейс не ломался, если файл темы не загрузился. */
+    :root {
+      --app-bg: var(--mapp-color-bg, #0f172a);
+      --app-card-bg: var(--mapp-color-surface, #1e293b);
+      --app-text: var(--mapp-color-text, #f8fafc);
+      --app-text-muted: var(--mapp-color-muted, #94a3b8);
+      --app-primary: var(--mapp-color-primary, #3b82f6);
+      --app-primary-text: var(--mapp-color-primary-text, #ffffff);
+      --app-danger: var(--mapp-color-danger, #ef4444);
+      --app-border: var(--mapp-color-border, #334155);
+      --app-radius: var(--mapp-radius-md, 12px);
+    }
+
+    html, body { margin: 0; min-height: 100%; background: var(--app-bg); color: var(--app-text); font-family: sans-serif; }
     body { padding: 20px 16px; box-sizing: border-box; }
     h1 { margin: 0 0 4px; font-size: 1.4rem; }
-    #status { color: #94a3b8; font-size: 0.9rem; min-height: 1.2em; margin: 0 0 16px; }
-    #status.error { color: #f87171; }
+    #status { color: var(--app-text-muted); font-size: 0.9rem; min-height: 1.2em; margin: 0 0 16px; }
+    #status.error { color: var(--app-danger); }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-    li { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    li { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--app-card-bg); border: 1px solid var(--app-border); border-radius: 12px; }
     .info { flex: 1; min-width: 0; }
     .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .meta { color: #94a3b8; font-size: 0.8rem; }
-    button { flex: none; padding: 8px 14px; border: none; border-radius: 8px; background: #2563eb; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-    button:disabled { background: #475569; cursor: default; }
+    .meta { color: var(--app-text-muted); font-size: 0.8rem; }
+    button { flex: none; padding: 8px 14px; border: none; border-radius: 8px; background: var(--app-primary); color: var(--app-primary-text); font: inherit; font-weight: 600; cursor: pointer; }
+    button:disabled { background: var(--app-border); cursor: default; }
   </style>
 </head>
 <body>

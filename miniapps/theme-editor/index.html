@@ -721,11 +721,26 @@
     el("btn-apply").addEventListener("click", async () => {
       if (!state.currentId) return;
       try {
+        // Правки уходят в базу вместе с применением: иначе оболочка получает
+        // старое содержимое темы, и кнопка выглядит как «ничего не делает».
+        if (state.dirty && isBuiltin()) {
+          showStatus(`Тема ${state.currentId} заводская: правки в неё не пишутся. Нажмите «Сохранить как», чтобы получить свою копию`, true);
+          return;
+        }
+        if (state.dirty) {
+          await MappHub.theme.save(state.currentId, collectCss());
+          markDirty(false);
+        }
         await MappHub.theme.apply(state.currentId);
         state.activeThemeId = state.currentId;
         el("active-label").textContent = `активна: ${state.currentId}`;
         el("active-label").classList.add("on");
-        showStatus(`Тема ${state.currentId} применена`);
+        updateButtons();
+        // Забираем токены уже применённой темы, затем возвращаем на страницу
+        // несохранённые правки — они сильнее того, что пришло из базы.
+        await MappHub.refreshThemeTokens();
+        applyToDocument();
+        showStatus(`Тема ${state.currentId} применена: оболочка и мини-приложения обновились`);
       } catch (err) {
         showStatus(err.message, true);
       }
@@ -735,6 +750,7 @@
       state.activeThemeId = payload.themeId;
       el("active-label").textContent = `активна: ${payload.themeId}`;
       el("active-label").classList.add("on");
+      applyToDocument();
     });
 
     loadOpenState();

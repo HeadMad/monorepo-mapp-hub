@@ -6,10 +6,59 @@
   let seq = 0;
   let fnSeq = 0;
 
+  // Токены, которые SDK выставил инлайново на <html>. Инлайн сильнее любого
+  // stylesheet, поэтому набор надо держать в актуальном состоянии: значения,
+  // которых нет в новой теме, снимаются, иначе они «залипают» после переключения.
+  const appliedTokens = new Set();
+
   function applyTokens(tokens) {
     const root = document.documentElement;
+    const next = new Set();
     for (const [name, value] of Object.entries(tokens || {})) {
-      if (name.startsWith("--")) root.style.setProperty(name, String(value));
+      if (!name.startsWith("--")) continue;
+      root.style.setProperty(name, String(value));
+      next.add(name);
+    }
+    for (const name of appliedTokens) {
+      if (!next.has(name)) root.style.removeProperty(name);
+    }
+    appliedTokens.clear();
+    for (const name of next) appliedTokens.add(name);
+  }
+
+  // Разбор CSS темы в пары "--name: value". Копия
+  // apps/shell-mobile/www/js/core/cssTokens.js: SDK уезжает в архив мини-приложения
+  // и не может импортировать код оболочки, поэтому обе реализации проверяются
+  // одним тестом на одинаковый результат.
+  function parseCssVariables(css) {
+    const tokens = {};
+    if (typeof css !== "string") return tokens;
+    const open = css.indexOf("{");
+    const close = css.lastIndexOf("}");
+    if (open < 0 || close <= open) return tokens;
+    for (const declaration of css.slice(open + 1, close).split(";")) {
+      const colon = declaration.indexOf(":");
+      if (colon <= 0) continue;
+      const name = declaration.slice(0, colon).trim();
+      const value = declaration.slice(colon + 1).trim();
+      if (!/^--[A-Za-z0-9_-]{1,64}$/.test(name)) continue;
+      if (!value || /[{}<>]/.test(value)) continue;
+      tokens[name] = value;
+    }
+    return tokens;
+  }
+
+  // Второй канал доставки темы: даже если https://mapp.local/theme.css не
+  // загрузился (404, ошибка генератора, гонка при старте), значения приходят
+  // по мосту и выставляются инлайново.
+  async function refreshThemeTokens() {
+    try {
+      const tokens = await ui.getThemeTokens();
+      applyTokens(tokens);
+      emit("themeTokens", tokens);
+      return tokens;
+    } catch (err) {
+      return {};
     }
   }
 
@@ -67,7 +116,10 @@
     }
 
     if (data.__mapp_event__ === true) {
-      if (data.event === "themeChanged") reloadThemeCss();
+      if (data.event === "themeChanged") {
+        reloadThemeCss();
+        refreshThemeTokens();
+      }
       if (data.event === "bus.message") {
         deliverBus(data.payload);
         return;
@@ -265,9 +317,10 @@
     bus,
     events: { on, off, once },
     reloadThemeCss,
+    refreshThemeTokens,
   };
 
   if (window.parent !== window) {
-    ui.getThemeTokens().then(applyTokens).catch(() => {});
+    refreshThemeTokens();
   }
 })();

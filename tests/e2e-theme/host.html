@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>shell-host</title>
+  <!-- Повторяет разметку оболочки: динамический theme.css до tokens.css -->
+  <link id="mapp-theme-css" rel="stylesheet" href="https://mapp.local/theme.css">
+  <link rel="stylesheet" href="https://shell.test/tokens.css">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: var(--app-bg); color: var(--app-text); display: flex; flex-direction: column; }
+    iframe { flex: 1 1 50%; width: 100%; border: 0; display: block; min-height: 0; }
+  </style>
+</head>
+<body>
+  <iframe id="editor" src="https://mapp.local/theme-editor/index.html"></iframe>
+  <iframe id="launcher" src="https://mapp.local/launcher/index.html"></iframe>
+  <script type="module">
+    // Оболочка: перечитывает theme.css по mapp:event themeChanged, как в MappHostBridge.
+    import { startThemeCss } from "https://shell.test/js/bridge/themeCss.js";
+    startThemeCss();
+
+    // Мост оболочки: JSON-RPC из мини-приложений -> нативная сторона (питон, window.nativeCall).
+    function frames() {
+      return [...document.querySelectorAll("iframe")].map((f) => f.contentWindow).filter(Boolean);
+    }
+    function broadcast(event, payload) {
+      for (const w of frames()) w.postMessage({ __mapp_event__: true, event, payload }, "*");
+      window.dispatchEvent(new CustomEvent("mapp:event", { detail: { event, payload } }));
+    }
+    window.addEventListener("message", async (e) => {
+      const msg = e.data;
+      if (!msg || msg.jsonrpc !== "2.0" || !frames().includes(e.source)) return;
+      try {
+        const result = await window.nativeCall(msg.method, msg.params || {});
+        e.source.postMessage({ jsonrpc: "2.0", id: msg.id, result }, "*");
+        if (msg.method === "theme.apply" || msg.method === "theme.save" || msg.method === "theme.reset") {
+          broadcast("themeChanged", { themeId: result.activeThemeId || (msg.params || {}).themeId });
+        }
+      } catch (err) {
+        e.source.postMessage({ jsonrpc: "2.0", id: msg.id, error: { message: String(err.message || err) } }, "*");
+      }
+    });
+    window.hostReady = true;
+  </script>
+</body>
+</html>

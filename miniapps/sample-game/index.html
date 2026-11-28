@@ -4,11 +4,28 @@
   <meta charset="UTF-8">
   <title>Sample HTML5 Game</title>
   <script src="https://mapp.local/MappHub.js"></script>
+  <!-- CSS активной темы: отдаёт нативный слой по https://mapp.local/theme.css -->
+  <link id="mapp-theme-css" rel="stylesheet" href="https://mapp.local/theme.css">
   <style>
-    body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 30px; text-align: center; }
-    button { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 10px; }
-    .back { background: #334155; }
-    #output { margin: 20px auto; background: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155;
+    /* Палитра мини-приложения. Значения приходят из активной темы по
+       https://mapp.local/theme.css (переменные --mapp-*); в скобках — заводские
+       цвета, чтобы интерфейс не ломался, если файл темы не загрузился. */
+    :root {
+      --app-bg: var(--mapp-color-bg, #0f172a);
+      --app-card-bg: var(--mapp-color-surface, #1e293b);
+      --app-text: var(--mapp-color-text, #f8fafc);
+      --app-text-muted: var(--mapp-color-muted, #94a3b8);
+      --app-primary: var(--mapp-color-primary, #3b82f6);
+      --app-primary-text: var(--mapp-color-primary-text, #ffffff);
+      --app-danger: var(--mapp-color-danger, #ef4444);
+      --app-border: var(--mapp-color-border, #334155);
+      --app-radius: var(--mapp-radius-md, 12px);
+    }
+
+    body { background: var(--app-bg); color: var(--app-text); font-family: sans-serif; margin: 0; padding: 30px; text-align: center; }
+    button { background: var(--app-primary); color: var(--app-primary-text); border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 10px; }
+    .back { background: var(--app-border); }
+    #output { margin: 20px auto; background: var(--app-card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--app-border);
       text-align: left; font-family: monospace; font-size: 0.9rem; max-width: 400px; white-space: pre-wrap; }
   </style>
 </head>
