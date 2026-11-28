@@ -17,6 +17,7 @@ import { MessageBus, CONSOLE_ID, SHELL_ID } from "./bridge/bus.js";
 import { formatArgs } from "./core/formatArgs.js";
 import { installPreinstalled } from "./installer/preinstalled.js";
 import { DialogClient } from "./dialogs/client.js";
+import { startThemeCss } from "./bridge/themeCss.js";
 
 // Разрешение, которое проверяется до вызова экшена. Отсутствие записи = разрешение не требуется.
 const PERMISSION_MAP = {
@@ -74,6 +75,7 @@ class MappShellRuntime {
     this.captureShellConsole();
     window.addEventListener("message", (event) => this.onMessage(event));
     startMappHostBridge();
+    startThemeCss();
     this.start();
   }
 

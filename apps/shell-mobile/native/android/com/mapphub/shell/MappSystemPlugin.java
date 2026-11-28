@@ -322,7 +322,7 @@ public class MappSystemPlugin extends Plugin {
     }
 
     private void onActiveThemeChanged(String themeId) {
-        assets.invalidateCache("theme.css");
+        assets.invalidateCache(MappLocalAssetHandler.THEME_CSS);
         JSObject payload = new JSObject();
         payload.put("themeId", themeId);
         payload.put("timestamp", System.currentTimeMillis());

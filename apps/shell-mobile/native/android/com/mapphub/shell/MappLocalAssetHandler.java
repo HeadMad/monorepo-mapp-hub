@@ -26,7 +26,7 @@ public final class MappLocalAssetHandler {
     public static final String HOST = "mapp.local";
 
     private static final String ASSET_ROOT = "public/assets/";
-    private static final String THEME_CSS = "theme.css";
+    static final String THEME_CSS = "theme.css";
     private static final String TAG = "MappLocalAsset";
     private static final Pattern FILE_NAME = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]{0,127}");
     private static final long GENERATOR_TIME_LIMIT_NS = 2_000_000_000L;

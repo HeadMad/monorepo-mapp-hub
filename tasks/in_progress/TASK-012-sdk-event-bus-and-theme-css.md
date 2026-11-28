@@ -28,3 +28,15 @@
 
 ### Tests
 - Логика событий и Double Buffering покрывается тестами в `tests/sdk/` (node + jsdom-заглушка), см. TASK-014.
+
+### Progress
+
+2026-11-28, 0.2.0-beta.13: генератор `https://mapp.local/theme.css` написан —
+`apps/shell-mobile/www/assets/theme.css.js` (Rhino, ES5). Он читает
+`config/active_theme` и `themes/<id>` и пересобирает блок `:root`, поэтому
+`reloadThemeCss()` больше не упирается в 404. Оболочка подключает `theme.css`
+первой строкой в `<head>` и перезагружает его по `themeChanged`
+(`js/bridge/themeCss.js`). `www/css/tokens.css` переведён на алиасы `--app-*` →
+`--mapp-*` с запасными значениями. Осталось: перевести мини-приложения на
+`--mapp-*` (см. TASK-016) и убрать расхождение `ui.getThemeTokens` (читает
+`theme/tokens`, куда никто не пишет).

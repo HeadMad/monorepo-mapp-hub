@@ -1,11 +1,25 @@
+/* Токены оболочки.
+ *
+ * Значения берутся из активной темы: нативный слой отдаёт её по адресу
+ * https://mapp.local/theme.css (генератор www/assets/theme.css.js), где
+ * объявлены переменные --mapp-*. Оболочка исторически использует свой
+ * префикс --app-*, поэтому здесь он превращается в алиас.
+ *
+ * Второй аргумент var() — запасное значение: если theme.css не загрузился
+ * (первый запуск, 404, ошибка генератора), оболочка остаётся в тёмном
+ * оформлении, как и раньше.
+ *
+ * shell.setTokens по-прежнему может перебить любой токен: он пишет
+ * --app-* инлайново в :root, а инлайн-стиль сильнее этого файла.
+ */
 :root {
-  --app-bg: #0f172a;
-  --app-card-bg: #1e293b;
-  --app-text: #f8fafc;
-  --app-text-muted: #94a3b8;
-  --app-primary: #3b82f6;
-  --app-primary-hover: #2563eb;
-  --app-danger: #ef4444;
-  --app-border: #334155;
-  --app-radius: 12px;
+  --app-bg: var(--mapp-color-bg, #0f172a);
+  --app-card-bg: var(--mapp-color-surface, #1e293b);
+  --app-text: var(--mapp-color-text, #f8fafc);
+  --app-text-muted: var(--mapp-color-muted, #94a3b8);
+  --app-primary: var(--mapp-color-primary, #3b82f6);
+  --app-primary-hover: var(--mapp-color-primary-hover, #2563eb);
+  --app-danger: var(--mapp-color-danger, #ef4444);
+  --app-border: var(--mapp-color-border, #334155);
+  --app-radius: var(--mapp-radius-md, 12px);
 }
