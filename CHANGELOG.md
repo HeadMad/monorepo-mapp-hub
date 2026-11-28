@@ -4,9 +4,17 @@ This file is generated automatically from Conventional Commits: `node scripts/ch
 
 ## Unreleased
 
+### Fixed
+
+- **theme:** serve theme.css from generator and link it in the shell (abe87cf)
+
 ### Documentation
 
 - **tasks:** mark dialogs catalog entry and theme editor 0.2.0-beta.12 release (f78b54c)
+
+### Chores
+
+- **release:** shell 0.2.0-beta.13 (versionCode 20033) (83cac3f)
 
 ## v0.2.0-beta.12 — 2026-11-27
 
